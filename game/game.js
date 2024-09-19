@@ -13,6 +13,8 @@ async function start(loadTime){
         To know when the splash screen is gone, use the menu activate event.
     */
 
+    let screenCenterX = app.screen.width / 2, screenCenterY = app.screen.height / 2;
+
     engine.createScreen("menu", self => {
 
         /*
@@ -20,12 +22,74 @@ async function start(loadTime){
             Note: the order of the code matters for the z-index of sprites.
         */
 
-        self.add(new PIXI.Sprite(game.assets.menu_mountain))
+        gradient: {
+            const gradient = new PIXI.Sprite(game.assets.menu_gradient);
+
+            gradient.width = app.screen.width
+            self.add(gradient)
+        }
+
+        stars: {
+            const starContainer = new PIXI.Container();
+
+            self.add(starContainer);
+
+            const starCount = 200;
+
+            for (let i = 0; i < starCount; i++) {
+                const star = new PIXI.Graphics();
+                star.beginFill(0xFFFFFF); // White color
+                star.drawCircle(0, 0, Math.random() * 2); // Radius of 2
+                star.endFill();
+                
+                // Set initial position
+                star.x = Math.random() * app.screen.width;
+                star.y = Math.random() * app.screen.height - 200;
+                
+                // Add to the container
+                starContainer.addChild(star);
+            }
+            
+            app.ticker.add((delta) => {
+                starContainer.children.forEach(star => {
+                    // Move stars
+                    star.x += Math.sin(Date.now() / 1000 + star.y) * 0.01;
+                    star.y += Math.cos(Date.now() / 1000 + star.x) * 0.01;
+                    
+                    // Blink stars
+                    star.alpha = Math.sin(Date.now() / 1000 + star.x);
+                });
+            });            
+        }
+
+        mountains: {
+            const mountains = [new PIXI.Sprite(game.assets.menu_mountain), new PIXI.Sprite(game.assets.menu_mountain), new PIXI.Sprite(game.assets.menu_mountain), new PIXI.Sprite(game.assets.menu_mountain)];
+    
+            let i = 0;
+            for(let mountain of mountains) {
+                mountain.scale = {x: .8, y: .8}
+                mountain.position.x = screenCenterX - (mountain.width / 2)
+                mountain.position.y = (app.screen.height - 300) + (i * 20)
+    
+                let filter = new PIXI.ColorMatrixFilter();
+                filter.brightness(1 - (i * .3), false);
+                mountain.filters = [filter]
+    
+                self.add(mountain)
+                i++
+            }
+        }
+
+        const soul = new PIXI.Sprite(game.assets.soul);
+        self.add(soul)
+
+        // Copyright text
+        self.text("Fundrtejl V0.1 (c) TheLSTV 2024", {x: "center", textAlign: "center", y: app.screen.height - 32, color: 0xaaaaaa, scale: .5})
 
         let buttons = [
-            self.text("Start", {x: 0, y: 100}),
-            self.text("Settings", {x: 0, y: 200}),
-            self.text("Credits", {x: 0, y: 300})
+            self.text("Start", {x: "center", y: screenCenterY - 35, textAlign: "center"}),
+            self.text("Settings", {x: "center", y: screenCenterY, textAlign: "center"}),
+            self.text("Credits", {x: "center", y: screenCenterY + 35, textAlign: "center"}),
         ]
 
         let button = 0;
@@ -35,6 +99,9 @@ async function start(loadTime){
             if(id < 0) id = buttons.length - 1;
 
             button = id
+
+            soul.position.x = buttons[id].container.position.x - (soul.width + 15)
+            soul.position.y = buttons[id].container.position.y + (soul.height / 2)
 
             for(let [i, button] of buttons.entries()) button.color(i === id? 0xffff00 : 0xffffff);
         }

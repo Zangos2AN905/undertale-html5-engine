@@ -194,12 +194,20 @@ function Engine(element, options){
                 wrap: true,
                 wrapRect: null,
                 color: 0xffffff,
-                target: app.stage
+                target: app.stage,
+                textAlign: "left",
+                scale: 1
             }, options)
+
+            if(options.x === "center") options.x = app.screen.width / 2;
+            if(options.y === "center") options.y = app.screen.height / 2;
 
             if(options.target.isScreenObject) options.target = options.target.container;
 
-            let xPos = options.x, yPos = options.y, i = -1, doneCallback, sprites = [];
+            let xPos = 0, yPos = 0, i = -1, doneCallback, sprites = [], container = new PIXI.Container();
+
+            container.position.x = options.x;
+            container.position.y = options.y;
 
             function drawNextChar(){
                 i++;
@@ -210,7 +218,7 @@ function Engine(element, options){
 
                 if(options.iterator){                    
                     options.iterator({
-                        i, char: text[i], text, xPos, yPos, escape: char === "\x1B",
+                        i, char: text[i], text, xPos, yPos, escape: char === "\x1B", container,
 
                         onSprite(callback){
                             spriteCallback = callback
@@ -225,6 +233,8 @@ function Engine(element, options){
                 const charCode = text.charCodeAt(i) - options.font.data.startChar; // Get the character's index in the spritesheet
                 const charMetrics = options.font.data.charData[charCode];
 
+                options.target.addChild(container)
+
                 if ((charMetrics && !options.skip) || [" ", "\n"].includes(char)) {
 
                     let sprite;
@@ -234,6 +244,8 @@ function Engine(element, options){
     
                         sprite.position.x = xPos + charMetrics.xOffset;
                         sprite.position.y = yPos + charMetrics.yOffset;
+
+                        sprite.scale = {x: options.scale, y: options.scale};
     
                         if(char !== "\x81") sprite.tint = options.color;
 
@@ -244,10 +256,10 @@ function Engine(element, options){
 
                         if(sprite && !sprite.destroyed) {
 
-                            options.target.addChild(sprite)
+                            container.addChild(sprite)
                             sprites.push(sprite)
                             
-                            xPos += (charMetrics.baseWidth || sprite.width) + options.letterSpacing;
+                            xPos += ((charMetrics.baseWidth || sprite.width) + options.letterSpacing) * options.scale;
 
                         } else sprite = null;
                     }
@@ -255,9 +267,13 @@ function Engine(element, options){
                     if(options.space) xPos += options.space, options.space = null;
 
                     if((options.wrap && xPos > _this.width) || char === "\n" || options.lineBreak){
-                        xPos = options.x
+                        xPos = 0
                         yPos += options.font.data.cellHeight + options.lineHeight
                     }
+                }
+
+                if(options.textAlign === "center") {
+                    container.position.x = options.x - (container.width / 2)
                 }
 
                 if(i === text.length - 1) {
@@ -284,6 +300,8 @@ function Engine(element, options){
 
                 sprites,
 
+                container,
+
                 color(color){
                     for(let sprite of sprites){
                         sprite.tint = color
@@ -299,10 +317,8 @@ function Engine(element, options){
                 },
 
                 moveBy(x, y){
-                    for(let sprite of sprites){
-                        if(x) sprite.position.x += x
-                        if(y) sprite.position.y += y
-                    }
+                    container.position.x += x
+                    container.position.y += y
                 },
 
                 swap(index, charCode){
@@ -323,10 +339,7 @@ function Engine(element, options){
 
                 destroy(){
                     options.break = true;
-
-                    for(let sprite of sprites){
-                        sprite.destroy({ children: true, texture: false })
-                    }
+                    container.destroy({ children: true, texture: false })
                 }
             }
         }
