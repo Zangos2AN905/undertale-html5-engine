@@ -13,16 +13,14 @@ async function start(loadTime){
         To know when the splash screen is gone, use the menu activate event.
     */
 
-
-    engine.createScreen("credits", self => {
-        self.text("=== Credits ===\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
-    })
-
     engine.createScreen("menu", self => {
 
         /*
             Create and draw the game menu
+            Note: the order of the code matters for the z-index of sprites.
         */
+
+        self.add(new PIXI.Sprite(game.assets.menu_mountain))
 
         let buttons = [
             self.text("Start", {x: 0, y: 100}),
@@ -77,6 +75,10 @@ async function start(loadTime){
 
             selectButton(0)
         })
+    })
+
+    engine.createScreen("credits", self => {
+        self.text("=== Credits ===\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
     })
 
     engine.createScreen("gameover")

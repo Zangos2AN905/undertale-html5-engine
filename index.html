@@ -9,7 +9,8 @@
     }
     
     @resources {
-        js: /engine/pixi.js, /engine/engine.js, /game/constructor.js, /game/game.js;
+        # CDN can be replaced with local copy of PIXI.js
+        js: https://cdn.jsdelivr.net/npm/pixi.js-legacy@7.4.2/dist/pixi-legacy.min.js, /engine/engine.js, /game/constructor.js, /game/game.js;
 
         ls-js: tiny;
     }
