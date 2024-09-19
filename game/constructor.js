@@ -71,7 +71,9 @@ LS.once("body-available", async function () {
     start(loadTime)
 
     // Debug: Skip splash screen
-    return viewPort.show(), O("#splash").hide(), engine.switchScreen("menu")
+    // return viewPort.show(), O("#splash").hide(), engine.switchScreen("menu")
+
+    // TODO: Render the splashscreen in the canvas instead of DOM
 
     // Splash screen
     setTimeout(() => {
