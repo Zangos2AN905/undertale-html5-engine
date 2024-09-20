@@ -15,8 +15,9 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
     ### Creating your first screen
     ```js
     let screen = engine.createScreen("screen_name")
+    // Here, the screen should be constructed.
     ```
-    The createScreen function also accepts a callback which provides the screen instance directly:
+    Alternatively: The createScreen function also accepts a callback which provides the screen instance directly:
     ```js
     engine.createScreen("screen_name", self => {
         // Here, the screen should be constructed.
