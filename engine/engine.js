@@ -36,6 +36,14 @@ function Engine(element, options){
                     domEvent: event
                 })
             }))
+
+            _this.tickers = {}
+        }
+
+        onAppAvailable(){
+            app.ticker.add(delta => {
+                if(_this.tickers[_this.activeScreen]) for(let ticker of _this.tickers[_this.activeScreen]) if(ticker) ticker(delta);
+            })
         }
 
         applyOptions(options){
@@ -139,6 +147,8 @@ function Engine(element, options){
                 activate: []
             };
 
+            _this.tickers[id] = [];
+
             game.screens[id] = {
                 container,
 
@@ -157,6 +167,15 @@ function Engine(element, options){
                 text(text, options = {}){
                     options.target = container
                     return _this.text(text, options)
+                },
+
+                addTicker(callback){
+                    _this.tickers[id].push(callback)
+                },
+
+                removeTicker(callback){
+                    let index = _this.tickers[id].indexOf(callback)
+                    delete _this.tickers[id][index]
                 }
             }
 
@@ -167,10 +186,12 @@ function Engine(element, options){
 
         switchScreen(id) {
             app.stage.removeChildren();
-            app.stage.addChild(game.screens[id].container);
-            game.keyReceiver = game.screens[id].keyReceiver || null
+            game.keyReceiver = viewPort.onclick = game.screens[id].keyReceiver || null
+
+            _this.activeScreen = id
 
             for(let listener of game.screens[id].events.activate) listener(game.screens[id])
+            app.stage.addChild(game.screens[id].container);
         }
 
         clearAll(){
@@ -187,7 +208,7 @@ function Engine(element, options){
                 x: 0,
                 y: 0,
                 nextDelay: 0,
-                letterSpacing: 4,
+                letterSpacing: 0,
                 lineHeight: 4,
                 size: null,
                 font: game.fonts.bitmap.Determination,

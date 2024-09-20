@@ -1,11 +1,8 @@
 <head>
 
     @manifest {
-        title: "OverTale";
-        favicon: "/assets/icon.png";
-
-        type: game;
-        version: 0;
+        title: "Undertale";
+        favicon: "/assets/soul.png";
     }
     
     @resources {
@@ -22,24 +19,9 @@
 </head>
 
 <body>
-    <main %viewPort hidden>
-        <game-overlay %splash>
-            <img height="60" .center-xy src="/assets/logo.png" alt="logo" %logo>
-            <span .center-xy .clickToContinue hidden>[ click to enter ]</span>
-        </game-overlay>
-    </main>
+    <main %viewPort hidden></main>
 
     <style>
-        /* @font-face {
-            font-family: "DeterminationMono";
-            src: url(/assets/fonts/determination/mono.ttf);
-        }
-    
-        @font-face {
-            font-family: "CryptOfNextWeek";
-            src: url(/assets/fonts/crypt-of-next-week/font.ttf);
-        } */
-    
         @font-face {
             font-family: "DeterminationSans";
             src: url(/assets/fonts/determination/sans.ttf);
@@ -94,26 +76,6 @@
             background-color: #000;
             padding: 0;
             margin: 0;
-        }
-        
-        game-overlay {
-            display: block;
-            position: absolute;
-            inset: 0;
-        }
-
-        .center-xy {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .clickToContinue {
-            top: calc(50% + 120px);
-            color: gray;
-            font-family: CryptOfNextWeek;
-            font-size: 10px;
         }
     </style>
 </body>

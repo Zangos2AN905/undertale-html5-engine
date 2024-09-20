@@ -30,16 +30,20 @@ LS.once("body-available", async function () {
         antialias: false,
     });
 
+    engine.onAppAvailable()
+
     game = {
         engine,
         renderer: app,
 
         assets: {
-            DeterminationBitmap: "/assets/fonts/determination/font.png?cache=0",
+            DeterminationBitmap: "/assets/fonts/determination/font.png",
+            CryptOfNextWeekBitmap: "/assets/fonts/crypt-of-next-week/font.png",
 
             menu_mountain: "/assets/sprites/menu/mountain.png",
             menu_gradient: "/assets/sprites/menu/gradient.svg",
             soul: "/assets/soul.png",
+            logo: "/assets/logo.png",
         },
 
         screens: {},
@@ -59,7 +63,8 @@ LS.once("body-available", async function () {
 
     game.fonts = {
         bitmap: {
-            Determination: engine.font({texture: game.assets.DeterminationBitmap, data: await engine.loadFontData("/assets/fonts/determination/FontData.csv?cache=4")})
+            Determination: engine.font({texture: game.assets.DeterminationBitmap, data: await engine.loadFontData("/assets/fonts/determination/FontData.csv?cache=4")}),
+            CryptOfNextWeek: engine.font({texture: game.assets.CryptOfNextWeekBitmap, data: await engine.loadFontData("/assets/fonts/crypt-of-next-week/FontData.csv?cache=0")})
         }
     }
 
@@ -70,25 +75,9 @@ LS.once("body-available", async function () {
     // Move on to game.js
     start(loadTime)
 
-    // Debug: Skip splash screen
-    // return viewPort.show(), O("#splash").hide(), engine.switchScreen("menu")
 
-    // TODO: Render the splashscreen in the canvas instead of DOM
-
-    // Splash screen
+    // Start the splash screen
     setTimeout(() => {
-        viewPort.show();
-
-        // Splash screen
-        let clickTimeout = setTimeout(() => {
-            O(".clickToContinue").show()
-        }, 2500)
-
-        O("#splash").on("click", () => {
-            clearTimeout(clickTimeout);
-            O("#splash").hide()
-
-            engine.switchScreen("menu")
-        })
+        engine.switchScreen("splash")
     }, delay)
 })

@@ -15,6 +15,45 @@ async function start(loadTime){
 
     let screenCenterX = app.screen.width / 2, screenCenterY = app.screen.height / 2;
 
+    // Splash screen
+    engine.createScreen("splash", self => {
+        const logo = new PIXI.Sprite(game.assets.logo);
+
+        let originalWidth = logo.width;
+        logo.width = Math.min(app.screen.width - 80, logo.width)
+        logo.height = logo.height * (logo.width / originalWidth)
+        logo.position.x = screenCenterX - (logo.width / 2)
+        logo.position.y = screenCenterY - (logo.height / 2)
+
+        self.add(logo)
+
+        let text = self.text("[click to enter]", {
+            x: "center",
+            textAlign: "center",
+            y: app.screen.height - 132,
+
+            scale: 1.4,
+
+            color: 0x888888,
+            font: game.fonts.bitmap.CryptOfNextWeek
+        })
+
+        self.onActivated(() => {
+            text.hide()
+            viewPort.show();
+
+            let clickTimeout = setTimeout(() => {
+                text.show()                    
+            }, 2500)
+
+            viewPort.onclick = () => {
+                clearTimeout(clickTimeout);
+                engine.switchScreen("menu")
+            }
+        })
+    })
+
+
     engine.createScreen("menu", self => {
 
         /*
@@ -27,6 +66,13 @@ async function start(loadTime){
 
             gradient.width = app.screen.width
             self.add(gradient)
+
+            let filter = new PIXI.ColorMatrixFilter();
+            gradient.filters = [filter]
+
+            self.addTicker((delta) => {
+                filter.brightness(Math.max(.5, (Math.cos(Date.now() / 5000) * .5) + .5), false);
+            })
         }
 
         stars: {
@@ -50,7 +96,7 @@ async function start(loadTime){
                 starContainer.addChild(star);
             }
             
-            app.ticker.add((delta) => {
+            self.addTicker((delta) => {
                 starContainer.children.forEach(star => {
                     // Move stars
                     star.x += Math.sin(Date.now() / 1000 + star.y) * 0.01;
@@ -59,7 +105,7 @@ async function start(loadTime){
                     // Blink stars
                     star.alpha = Math.sin(Date.now() / 1000 + star.x);
                 });
-            });            
+            });
         }
 
         mountains: {
@@ -78,13 +124,19 @@ async function start(loadTime){
                 self.add(mountain)
                 i++
             }
+
+            self.addTicker((delta) => {
+                for(let i = 0; i < mountains.length; i++) {
+                    mountains[i].position.x += Math.sin(Date.now() / 500 + mountains[i].position.y) * (.1 - (0.015 * i));
+                }
+            });
         }
 
         const soul = new PIXI.Sprite(game.assets.soul);
         self.add(soul)
 
         // Copyright text
-        self.text("Fundrtejl V0.1 (c) TheLSTV 2024", {x: "center", textAlign: "center", y: app.screen.height - 32, color: 0xaaaaaa, scale: .5})
+        self.text("Fundrtejl V0.1 (c) TheLSTV 2024", {x: "center", textAlign: "center", y: app.screen.height - 32, color: 0xaaaaaa, font: game.fonts.bitmap.CryptOfNextWeek})
 
         let buttons = [
             self.text("Start", {x: "center", y: screenCenterY - 35, textAlign: "center"}),
