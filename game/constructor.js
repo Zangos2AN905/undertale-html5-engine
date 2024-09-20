@@ -44,6 +44,8 @@ LS.once("body-available", async function () {
             menu_gradient: "/assets/sprites/menu/gradient.svg",
             soul: "/assets/soul.png",
             logo: "/assets/logo.png",
+
+            frisk: "/assets/sprites/player/frisk.png",
         },
 
         screens: {},

@@ -208,15 +208,48 @@ async function start(loadTime){
     })
 
     engine.createScreen("game", self => {
-        self.onActivated(() => {
-            self.text("", {
-                nextDelay: 0,
 
-                iterator(position, options){
-                    position.onSprite(sprite => {
-                        
-                    })
-                }
+        // Player - Frisk texture
+
+        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 4, playerSpriteOffsetX = 3, playerSpriteOffsetY = 4;
+
+        let player = {
+            sprite: new PIXI.Sprite(game.assets.frisk),
+
+            frames: {
+                front0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                front1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                front2: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                front3: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                back0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                back1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                back2: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                back3: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                left0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                left1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                right0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                right1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+            },
+
+            setFrame(id){
+                player.sprite.texture.frame = player.frames[id]
+            }
+        }
+
+        // debug
+        // player.sprite.scale = {x: 6, y: 6}
+
+        player.setFrame("front0")
+
+        player.sprite.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
+
+        window.player = player
+
+        self.add(player.sprite)
+
+        self.onActivated(() => {
+            self.text("asds", {
+                nextDelay: 0
             })
         })
     })
