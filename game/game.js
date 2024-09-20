@@ -87,7 +87,7 @@ async function start(loadTime){
                 star.beginFill(0xFFFFFF); // White color
                 star.drawCircle(0, 0, Math.random() * 2); // Radius of 2
                 star.endFill();
-                
+
                 // Set initial position
                 star.x = Math.random() * app.screen.width;
                 star.y = Math.random() * app.screen.height - 200;
@@ -95,7 +95,7 @@ async function start(loadTime){
                 // Add to the container
                 starContainer.addChild(star);
             }
-            
+
             self.addTicker((delta) => {
                 starContainer.children.forEach(star => {
                     // Move stars
@@ -170,10 +170,10 @@ async function start(loadTime){
                     
                     switch(button) {
                         case 0: // Start button
-                            engine.switchScreen("credits")
+                            engine.switchScreen("game")
                             break
                         case 1: // Settings button
-                            engine.switchScreen("credits")
+                            // engine.switchScreen("settings")
                             break
                         case 2: // Credits button
                             engine.switchScreen("credits")
@@ -197,7 +197,28 @@ async function start(loadTime){
     })
 
     engine.createScreen("credits", self => {
+
         self.text("=== Credits ===\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
+
+        self.keyReceiver = event => {
+            if(event.down && event.main || event.cancel) {
+                engine.switchScreen("menu")
+            }
+        }
+    })
+
+    engine.createScreen("game", self => {
+        self.onActivated(() => {
+            self.text("", {
+                nextDelay: 0,
+
+                iterator(position, options){
+                    position.onSprite(sprite => {
+                        
+                    })
+                }
+            })
+        })
     })
 
     engine.createScreen("gameover")
