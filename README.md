@@ -16,6 +16,7 @@ Check out /game/game.js to see sample game logic.
 Version 1.0 [alpha 2.1]
 
 <br>
+
 ### Build instructions
 **With Akeno:** Simply clone the repo, add the directory to your Akeno app list and you are done, you can run the game from the local server.<br>
 To package/build to export for static platforms (eg. native application), you can use the `akeno bundle -a` command to create a ready-to-use offline package. The "-a" flag is required to keep the original structure and include all assets, otherwise the bundler will ignore them.<br>
