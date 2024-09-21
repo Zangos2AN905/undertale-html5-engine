@@ -16,7 +16,8 @@ Version 1.0 [alpha 2.1]<br>
 ## Pixel-Perfect
 <img width="139" alt="Frisk Sprite" src="https://github.com/user-attachments/assets/9a1d0051-34d9-43dd-b1c9-7fbd8055e324"><br>
 We made absolutely sure that the engine renders the game pixel-perfect, precisely as the original. This gives it a genuine and high-quality feeling, even though they use completely different engines.<br>
-The renderer is specifically configured for pixelart and uses the same pixel scaling and resolution as Undertale does.
+The renderer is specifically configured for pixelart and uses the same pixel scaling and resolution as Undertale does.<br>
+I think that for a web-based Undertale engine, this does pretty good! Performance-wise it is also not bad, the only major bottleneck now is the painfully slow DOM keyboard/mouse events.
 
 
 <br>
