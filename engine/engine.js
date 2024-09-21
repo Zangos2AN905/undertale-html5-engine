@@ -9,12 +9,9 @@ function Engine(element, options){
 
             _this.element = element;
 
-            _this.options = LS.Util.defaults({}, options)
-
-            _this.applyOptions(options)
-            _this.setResolution()
-
-            M.on("resize", this.fixResolution);
+            _this.options = LS.Util.defaults({
+                scaling: false
+            }, options)
 
             let upFired = true;
 
@@ -37,6 +34,31 @@ function Engine(element, options){
                 })
             }))
 
+            let scalingEnabled = !!options.scaling;
+
+            Object.defineProperty(_this, "scaling", {
+                get(){
+                    return scalingEnabled
+                },
+                set(value){
+                    scalingEnabled = !!value
+
+                    if(value){
+                        if(element.parentElement) element.parentElement.classList.add("scaling");
+                    } else {
+                        element.style.transform = ""
+                        if(element.parentElement) element.parentElement.classList.remove("scaling");
+                    }
+                }
+            })
+
+            _this.scaling = scalingEnabled
+
+            _this.applyOptions(options)
+            _this.setResolution()
+
+            M.on("resize", this.fixResolution);
+
             _this.tickers = {}
         }
 
@@ -52,6 +74,8 @@ function Engine(element, options){
         }
     
         fixResolution(){
+            if(!_this.scaling) return;
+
             let element = _this.element,
         
             scale = Math.min(

@@ -27,14 +27,14 @@ async function start(loadTime){
 
         self.add(logo)
 
-        let text = self.text("[click to enter]", {
+        let text = self.text("[ click to enter ]", {
             x: "center",
             textAlign: "center",
             y: app.screen.height - 132,
 
-            scale: 1.4,
+            scale: 1,
 
-            color: 0x888888,
+            color: 0x777777,
             font: game.fonts.bitmap.CryptOfNextWeek
         })
 
@@ -211,37 +211,95 @@ async function start(loadTime){
 
         // Player - Frisk texture
 
-        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 4, playerSpriteOffsetX = 3, playerSpriteOffsetY = 4;
+        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 3, playerCurrentFrame;
 
         let player = {
             sprite: new PIXI.Sprite(game.assets.frisk),
 
             frames: {
-                front0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                front1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                front2: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                front3: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                back0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                back1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                back2: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                back3: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                left0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 0), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                left1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 1), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                right0: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 2), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
-                right1: { x: playerSpriteOffsetX + ((playerBaseWidth + playerSpriteMargin) * 3), y: playerSpriteOffsetY, width: playerBaseWidth, height: playerBaseHeight },
+                front0: { x: (playerBaseWidth + playerSpriteMargin) * 0, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                front1: { x: (playerBaseWidth + playerSpriteMargin) * 1, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                front2: { x: (playerBaseWidth + playerSpriteMargin) * 2, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                front3: { x: (playerBaseWidth + playerSpriteMargin) * 3, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                back0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                back1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                back2:  { x: (playerBaseWidth + playerSpriteMargin) * 2, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                back3:  { x: (playerBaseWidth + playerSpriteMargin) * 3, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                left0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
+                left1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
+                right0: { x: (playerBaseWidth + playerSpriteMargin) * 2, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
+                right1: { x: (playerBaseWidth + playerSpriteMargin) * 3, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
             },
 
-            setFrame(id){
+            setFrame(id, center = true){
+                if(id === playerCurrentFrame || !player.frames[id]) return;
+
+                playerCurrentFrame = id
                 player.sprite.texture.frame = player.frames[id]
+                if(center) player.sprite.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
             }
         }
+
 
         // debug
         // player.sprite.scale = {x: 6, y: 6}
 
-        player.setFrame("front0")
+        player.setFrame("front0") // Initial sprite
 
-        player.sprite.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
+        let playerDirection = 3, playerWalking = false;
+
+        let keyStates = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        }
+
+        let frameIndex = 0;
+        let frameTimer = 0;
+        let directions = ["left", "right", "back", "front"];
+        
+        self.addTicker((delta) => {
+            if (playerWalking) {
+                frameTimer += delta;
+                if (frameTimer > (playerDirection > 1? 10: 5)) {
+                    frameTimer = 0;
+                    frameIndex = (frameIndex + 1) % (playerDirection > 1? 2: 4); // Loop through the 4 animation frames
+                }
+                player.setFrame(directions[playerDirection] + frameIndex);
+            } else {
+                player.setFrame(directions[playerDirection] + "0"); // Idle frame
+            }
+        });
+        
+        self.keyReceiver = event => {
+            // if(!event.isFirst && event.down) return;
+            if (event.direction === 0) keyStates.left = event.down;
+            if (event.direction === 1) keyStates.right = event.down;
+            if (event.direction === 2) keyStates.up = event.down;
+            if (event.direction === 3) keyStates.down = event.down;
+
+            updateDirection()
+        }
+
+        function updateDirection(){
+            if (keyStates.left) {
+                playerDirection = 0; // Left
+                playerWalking = true;
+            } else if (keyStates.right) {
+                playerDirection = 1; // Right
+                playerWalking = true;
+            } else if (keyStates.up) {
+                playerDirection = 2; // Up
+                playerWalking = true;
+            } else if (keyStates.down) {
+                playerDirection = 3; // Down
+                playerWalking = true;
+            } else {
+                playerWalking = false; // No keys pressed, player stops walking
+            }
+        }
+
 
         window.player = player
 
