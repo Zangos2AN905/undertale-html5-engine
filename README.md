@@ -19,6 +19,11 @@ We made absolutely sure that the engine renders the game pixel-perfect, precisel
 The renderer is specifically configured for pixelart and uses the same pixel scaling and resolution as Undertale does.<br>
 I think that for a web-based Undertale engine, this does pretty good! Performance-wise it is also not bad, the only major bottleneck now is the painfully slow DOM keyboard/mouse events.
 
+## Light-weight
+The entire engine is under 0.5MB (excluding assets) and an entire fully functional game can be set up in less than 550kB - without compression.<br>
+This makes it a pretty light-weight solution. This is more than 5x smaller than my previous engine used to make OG FanTale while having an insane performance and quality boost.<br>
+Thanks to this, it is simple to run this game from the web or on low-power devices like mobile phones.
+
 
 <br>
 
