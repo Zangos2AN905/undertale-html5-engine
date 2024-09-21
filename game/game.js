@@ -48,6 +48,7 @@ async function start(loadTime){
 
             viewPort.onclick = () => {
                 clearTimeout(clickTimeout);
+
                 engine.switchScreen("menu")
             }
         })
@@ -67,11 +68,8 @@ async function start(loadTime){
             gradient.width = app.screen.width
             self.add(gradient)
 
-            let filter = new PIXI.ColorMatrixFilter();
-            gradient.filters = [filter]
-
             self.addTicker((delta) => {
-                filter.brightness(Math.max(.5, (Math.cos(Date.now() / 5000) * .5) + .5), false);
+                gradient.alpha = Math.abs(Math.cos(Date.now() / 2500)) + .5                
             })
         }
 
@@ -132,16 +130,21 @@ async function start(loadTime){
             });
         }
 
+        // Create menu UI:
+
+        const menuUI = engine.layer();
+
         const soul = new PIXI.Sprite(game.assets.soul);
-        self.add(soul)
+        menuUI.add(soul)
 
         // Copyright text
-        self.text("Fundrtejl V0.1 (c) TheLSTV 2024", {x: "center", textAlign: "center", y: app.screen.height - 32, color: 0xaaaaaa, font: game.fonts.bitmap.CryptOfNextWeek})
+        menuUI.text("Fundrtejl V0.1 (c) TheLSTV 2024", {x: "center", textAlign: "center", y: app.screen.height - 32, color: 0xaaaaaa, font: game.fonts.bitmap.CryptOfNextWeek})
 
         let buttons = [
-            self.text("Start", {x: "center", y: screenCenterY - 35, textAlign: "center"}),
-            self.text("Settings", {x: "center", y: screenCenterY, textAlign: "center"}),
-            self.text("Credits", {x: "center", y: screenCenterY + 35, textAlign: "center"}),
+            menuUI.text("Start", {x: "center", y: screenCenterY - 35, textAlign: "center"}),
+            menuUI.text("Settings", {x: "center", y: screenCenterY, textAlign: "center"}),
+            menuUI.text("Credits", {x: "center", y: screenCenterY + 35, textAlign: "center"}),
+            menuUI.text("Debug mode", {x: "center", y: screenCenterY + 125, textAlign: "center"}),
         ]
 
         let button = 0;
@@ -158,8 +161,25 @@ async function start(loadTime){
             for(let [i, button] of buttons.entries()) button.color(i === id? 0xffff00 : 0xffffff);
         }
 
+        let disabled = false, starting = false;
+
+        self.addTicker((delta) => {
+            if(starting) {
+                menuUI.container.alpha -= (delta + 0.1) / 100
+
+                if(menuUI.container.alpha < 0){
+                    starting = false
+                    engine.switchScreen("game")
+                }
+            }
+
+            
+        });
+
         // Receive key events
         self.keyReceiver = event => {
+            if(disabled || starting) return;
+
             if(event.down && event.isFirst) {
 
                 if(event.direction > -1){
@@ -170,13 +190,16 @@ async function start(loadTime){
                     
                     switch(button) {
                         case 0: // Start button
-                            engine.switchScreen("game")
+                            starting = true
                             break
                         case 1: // Settings button
                             // engine.switchScreen("settings")
                             break
                         case 2: // Credits button
                             engine.switchScreen("credits")
+                            break
+                        case 3:
+                            game.debug = !game.debug
                             break
                     }
 
@@ -192,8 +215,13 @@ async function start(loadTime){
                 Menu has opened (perform resets, etc.)
             */
 
+            starting = false
+            menuUI.container.alpha = 1
+
             selectButton(0)
         })
+
+        self.add(menuUI)
     })
 
     engine.createScreen("credits", self => {
@@ -211,20 +239,32 @@ async function start(loadTime){
 
         // Player - Frisk texture
 
-        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 3, playerCurrentFrame;
+        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 3, playerCurrentFrame, playerCollisionHeight = 11;
+
+        let world = {
+            container: new PIXI.Container(),
+            map: new PIXI.Sprite(game.assets.map_test)
+        }
+
+        // Test!
+        world.container.addChild(world.map)
 
         let player = {
+
+            container: new PIXI.Container(),
+
             sprite: new PIXI.Sprite(game.assets.frisk),
+            collision: new PIXI.Graphics(),
 
             frames: {
-                front0: { x: (playerBaseWidth + playerSpriteMargin) * 0, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                front1: { x: (playerBaseWidth + playerSpriteMargin) * 1, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                front2: { x: (playerBaseWidth + playerSpriteMargin) * 2, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                front3: { x: (playerBaseWidth + playerSpriteMargin) * 3, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                back0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                back1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                back2:  { x: (playerBaseWidth + playerSpriteMargin) * 2, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                back3:  { x: (playerBaseWidth + playerSpriteMargin) * 3, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                down0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                down1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                down2:  { x: (playerBaseWidth + playerSpriteMargin) * 2, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                down3:  { x: (playerBaseWidth + playerSpriteMargin) * 3, y: 0, width: playerBaseWidth, height: playerBaseHeight },
+                up0:    { x: (playerBaseWidth + playerSpriteMargin) * 0, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                up1:    { x: (playerBaseWidth + playerSpriteMargin) * 1, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                up2:    { x: (playerBaseWidth + playerSpriteMargin) * 2, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
+                up3:    { x: (playerBaseWidth + playerSpriteMargin) * 3, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
                 left0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
                 left1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
                 right0: { x: (playerBaseWidth + playerSpriteMargin) * 2, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
@@ -236,79 +276,163 @@ async function start(loadTime){
 
                 playerCurrentFrame = id
                 player.sprite.texture.frame = player.frames[id]
-                if(center) player.sprite.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
+
+                if(center) player.container.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
+            },
+
+            get x(){
+                return (world.container.position.x * -1) + (screenCenterX - (player.sprite.width / 2));
+            },
+
+            get y(){
+                return (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (playerBaseHeight - playerCollisionHeight);
+            }
+
+        }
+
+        let camera = {
+            _scale: 2,
+
+            _worldX: 0,
+            _worldY: 0,
+
+            container: new PIXI.Container(),
+
+            get scale(){
+                return camera._scale
+            },
+
+            set scale(value){
+                camera._scale = value
+                camera.container.scale = {x: value, y: value}
+                camera.container.position = {x: (screenCenterX * (value -1)) * -1, y: (screenCenterY * (value -1)) * -1}
             }
         }
 
-
-        // debug
-        // player.sprite.scale = {x: 6, y: 6}
-
-        player.setFrame("front0") // Initial sprite
-
         let playerDirection = 3, playerWalking = false;
-
-        let keyStates = {
-            left: false,
-            right: false,
-            up: false,
-            down: false
-        }
 
         let frameIndex = 0;
         let frameTimer = 0;
-        let directions = ["left", "right", "back", "front"];
-        
+        let directions = ["left", "right", "up", "down"];
+        let keyStates = [false, false, false, false];
+
+        let playerSpeed = 2;
+
         self.addTicker((delta) => {
+            let activeDirection = keyStates.indexOf(true);
+
+            playerWalking = activeDirection > -1;
+
             if (playerWalking) {
+
+                playerDirection = activeDirection
+
+                let incrementX = 0, incrementY = 0;
+
+                // Calculate movement increment
+                if(keyStates[0]) incrementX += playerSpeed * delta; else if(keyStates[1]) incrementX -= playerSpeed * delta;
+                if(keyStates[2]) incrementY += playerSpeed * delta; else if(keyStates[3]) incrementY -= playerSpeed * delta;
+                
+                // Pre-calculate the value since it doesnt change
+                const playerX = player.x;
+                const playerY = player.y;
+
+                incrementX = Math.floor(incrementX)
+                incrementY = Math.floor(incrementY)
+
+                // Perform collision check
+
+                function collidesAt(playerX, playerY){
+                    for(let y = Math.floor(playerY); y < Math.ceil(playerY) + playerCollisionHeight; y++){
+                        if(window.mask[y]){
+                            for (const [startX, endX] of window.mask[y]) {
+                                if(
+                                    playerX < endX &&
+                                    playerX + playerBaseWidth > startX &&
+                                    y >= playerY &&
+                                    y < playerY + playerBaseHeight
+                                ) return true
+                            }
+                        }
+                    }
+                    return false
+                }
+                
+                // Perform final actions
+                if(!collidesAt(playerX, playerY + (incrementY * -1))) world.container.position.y += incrementY
+                if(!collidesAt(playerX + (incrementX * -1), playerY)) world.container.position.x += incrementX  
+
+
+                // Animation
                 frameTimer += delta;
                 if (frameTimer > (playerDirection > 1? 10: 5)) {
                     frameTimer = 0;
                     frameIndex = (frameIndex + 1) % (playerDirection > 1? 2: 4); // Loop through the 4 animation frames
                 }
+
                 player.setFrame(directions[playerDirection] + frameIndex);
+
             } else {
-                player.setFrame(directions[playerDirection] + "0"); // Idle frame
+
+                // Idle frame
+                player.setFrame(directions[playerDirection] + "0");
+
             }
         });
+
+        // window.checkCollision = function checkCollision(mask) {
+        //     const playerX = (world.container.position.x * -1) + (screenCenterX - (player.sprite.width / 2));
+        //     const playerY = (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (playerBaseHeight - playerCollisionHeight);
+
+        //     console.log(playerX, playerY);
+            
+
+        //     const playerWidth = playerBaseWidth;
+        //     const playerHeight = playerCollisionHeight;
+        
+        //     // Loop through the mask rows that overlap with the player's vertical position
+        //     for (let y = Math.floor(playerY); y < Math.ceil(playerY + playerHeight); y++) {
+        //         if (mask[y]) {
+        //             for (const [startX, endX] of mask[y]) {
+        //                 // Check if the player's rectangle overlaps with this segment
+        //                 if (
+        //                     playerX < endX &&             // Player's left is before segment's end
+        //                     playerX + playerWidth > startX && // Player's right is after segment's start
+        //                     y >= playerY &&                // Player's top is at or below the segment's row
+        //                     y < playerY + playerHeight    // Player's bottom is above the segment's row
+        //                 ) {
+        //                     return true; // Collision detected
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     return false; // No collision detected
+        // }
         
         self.keyReceiver = event => {
-            // if(!event.isFirst && event.down) return;
-            if (event.direction === 0) keyStates.left = event.down;
-            if (event.direction === 1) keyStates.right = event.down;
-            if (event.direction === 2) keyStates.up = event.down;
-            if (event.direction === 3) keyStates.down = event.down;
-
-            updateDirection()
+            keyStates[event.direction] = event.down;
         }
 
-        function updateDirection(){
-            if (keyStates.left) {
-                playerDirection = 0; // Left
-                playerWalking = true;
-            } else if (keyStates.right) {
-                playerDirection = 1; // Right
-                playerWalking = true;
-            } else if (keyStates.up) {
-                playerDirection = 2; // Up
-                playerWalking = true;
-            } else if (keyStates.down) {
-                playerDirection = 3; // Down
-                playerWalking = true;
-            } else {
-                playerWalking = false; // No keys pressed, player stops walking
-            }
-        }
+        game.world = { camera, player, world }
 
+        player.container.addChild(player.sprite)
 
-        window.player = player
+        camera.container.addChild(world.container)
+        camera.container.addChild(player.container)
 
-        self.add(player.sprite)
+        self.add(camera.container)
 
+        camera.container.visible = false
+        
         self.onActivated(() => {
-            self.text("asds", {
-                nextDelay: 0
-            })
+            camera.scale = camera._scale;
+            player.setFrame("front0")
+
+            // Fixes a PIXI.js bug somehow
+            setTimeout(() => {
+                camera.container.visible = true
+            }, 0)
         })
     })
 

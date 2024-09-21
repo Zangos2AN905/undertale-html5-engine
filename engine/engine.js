@@ -10,7 +10,7 @@ function Engine(element, options){
             _this.element = element;
 
             _this.options = LS.Util.defaults({
-                scaling: false
+                scaling: true
             }, options)
 
             let upFired = true;
@@ -45,6 +45,7 @@ function Engine(element, options){
 
                     if(value){
                         if(element.parentElement) element.parentElement.classList.add("scaling");
+                        _this.fixResolution()
                     } else {
                         element.style.transform = ""
                         if(element.parentElement) element.parentElement.classList.remove("scaling");
@@ -166,6 +167,23 @@ function Engine(element, options){
             return !!game.screens[id]
         }
 
+        layer(container = new PIXI.Container(), object){
+            return LS.Util.defaults({
+                container,
+
+                isLayerObject: true,
+
+                text(text, options = {}){
+                    options.target = container
+                    return _this.text(text, options)
+                },
+
+                add(item){
+                    container.addChild(item.isLayerObject? item.container: item)
+                }
+            }, object)
+        }
+
         createScreen(id, selfCallback){
             let container = new PIXI.Container(), events = {
                 activate: []
@@ -173,24 +191,14 @@ function Engine(element, options){
 
             _this.tickers[id] = [];
 
-            game.screens[id] = {
-                container,
+            game.screens[id] = _this.layer(container, {
 
                 events,
 
                 isScreenObject: true,
 
-                add(item){
-                    container.addChild(item)
-                },
-
                 onActivated(callback){
                     events.activate.push(callback)
-                },
-
-                text(text, options = {}){
-                    options.target = container
-                    return _this.text(text, options)
                 },
 
                 addTicker(callback){
@@ -201,7 +209,7 @@ function Engine(element, options){
                     let index = _this.tickers[id].indexOf(callback)
                     delete _this.tickers[id][index]
                 }
-            }
+            })
 
             if(selfCallback) selfCallback(game.screens[id])
 

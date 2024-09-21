@@ -7,7 +7,15 @@
     
     @resources {
         # CDN can be replaced with local copy of PIXI.js
-        js: https://cdn.jsdelivr.net/npm/pixi.js-legacy@7.4.2/dist/pixi-legacy.min.js, /engine/engine.js, /game/constructor.js, /game/game.js;
+        js:
+            https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.2/pixi.min.js,
+            /engine/engine.js,
+            /engine/constructor.js,
+            /engine/misc.js,
+
+            # Game logic
+            /game/game.js
+        ;
 
         ls-js: tiny;
     }
@@ -19,7 +27,7 @@
 </head>
 
 <body>
-    <main %viewPort hidden></main>
+    <main %viewPort></main>
 
     <style>
         @font-face {
@@ -29,7 +37,7 @@
 
         :root, html, body {
             font-family: DeterminationSans;
-            background: #000;
+            background: #111;
             color: #fff;
             position: fixed;
             margin: 0;
@@ -50,6 +58,9 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+
+        .debug canvas {
             outline: 2px solid red;
         }
         
@@ -72,6 +83,10 @@
         }
 
         #viewPort {
+
+            min-width: 640px;
+            min-height: 480px;
+
             height: 100vh;
             width: 100vw;
             /* overflow: hidden; */
@@ -79,5 +94,54 @@
             padding: 0;
             margin: 0;
         }
+
+        #toolset {
+            padding: 4px;
+        }
+
+        .scaling #toolset {
+            position: fixed;
+            background: #0005;
+            top: -50%;
+            right: 50%;
+        }
+
+        .debug #debugTools {
+            display: block;
+        }
     </style>
+
+    <div %toolset>
+        <details>
+            <summary>
+                Options
+            </summary>
+            <input type="checkbox" %scaleToView>
+            <label for="scaleToView">Scale to fit the screen</label> <br>
+            <input type="checkbox" %debugMode>
+            <label for="debugMode">Enable debug mode</label> <br> <br>
+            <button onclick="window.open(location.href, '', 'width=640,height=480')">Start in a window</button> <br> <br>
+            <div %debugTools hidden>
+                FPS: <span .fps></span>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        O("#scaleToView").on("change", function () {
+            engine.scaling = this.checked
+        })
+
+        let FPSInterval;
+
+        O("#debugMode").on("change", function () {
+            game.debug = this.checked
+
+            if(game.debug){
+                FPSInterval = setInterval(() => {
+                    O(".fps").innerText = app.ticker.FPS.toFixed(2)
+                }, 500)
+            } else clearInterval(FPSInterval)
+        })
+    </script>
 </body>

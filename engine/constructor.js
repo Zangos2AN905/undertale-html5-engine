@@ -32,6 +32,9 @@ LS.once("body-available", async function () {
 
     engine.onAppAvailable()
 
+
+    let DEBUG_MODE = false;
+
     game = {
         engine,
         renderer: app,
@@ -44,8 +47,10 @@ LS.once("body-available", async function () {
             menu_gradient: "/assets/sprites/menu/gradient.svg",
             soul: "/assets/soul.png",
             logo: "/assets/logo.png",
-
+            
             frisk: "/assets/sprites/player/frisk.png",
+
+            map_test: "/assets/maps/test/map.png",
         },
 
         screens: {},
@@ -56,6 +61,16 @@ LS.once("body-available", async function () {
                 cancel: ["x"],
                 directions: ["arrowleft", "arrowright", "arrowup", "arrowdown"] // left, right, up, down
             }
+        },
+
+        get debug(){
+            return DEBUG_MODE
+        },
+
+        set debug(value){
+            DEBUG_MODE = !!value
+
+            O("body").class("debug", DEBUG_MODE)
         }
     }
 
@@ -76,10 +91,14 @@ LS.once("body-available", async function () {
 
     // Move on to game.js
     start(loadTime)
+    window.mask = await Engine.misc.loadCollisionMask("/assets/maps/test/collision.png");
+
+    // Debug
+    return engine.switchScreen("game")
 
 
     // Start the splash screen
     setTimeout(() => {
-        engine.switchScreen("splash")
+        engine.switchScreen("menu")
     }, delay)
 })
