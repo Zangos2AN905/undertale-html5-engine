@@ -1,16 +1,14 @@
-
-![logo](https://github.com/user-attachments/assets/b58d2d97-1eda-449b-98ef-a2b5df78ae51)
-
 # the-lstv/undertale
 
 A robust Undertale fangame engine, creted entirely from scratch, pure code, no WYSIWYG.<br>
 Uses WebGL for rendering, and thus is also really fast and flexible.<br><br>
-So far its early in development, but features a fast and feature-rich text renderer that can handle basically all of your needs, including custom individual character behavior.<br>
-On top of that the engine features all the standard features like scenes, universal event handling, etc.<br>
+So far its pretty early in development, but it already has a bunch to offer.<br>
+The engine features a fast and feature-rich text renderer that can handle basically all of your needs, including custom individual character behavior.<br>
+On top of that, it features all the standard features like scenes, rooms, fast collisions (pixel-perfect and rectangle modes), universal event handling, etc.<br>
 It makes creating Undertale fangames a lot easier.
 <br><br>
-Check out /game/game.js to see sample game logic.
-<br><br>Written entirely in JS.<br>
+Check out /game/game.js to see sample game logic and /engine/engine.js for the engine logic.
+<br><br>Written entirely in JS and GLSL.<br>
 Version 1.0 [alpha 2.1]<br>
 
 ## Pixel-Perfect
