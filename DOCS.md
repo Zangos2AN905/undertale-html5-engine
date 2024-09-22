@@ -150,6 +150,15 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
             // ... and more options ...
         })
 
+
+
+        // A default ticker function to keep things simple. You can create your own ticker for more flexibility.
+        self.addTicker(world.defaultTicker);
+
+        // Simplest setup to pass movement controls to the engine
+        self.keyReceiver = event => player.keyStates[event.direction] = event.down;
+
+
         self.onActivated(() => {
             world.initialize()
 
