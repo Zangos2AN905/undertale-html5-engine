@@ -226,7 +226,7 @@ async function start(loadTime){
 
     engine.createScreen("credits", self => {
 
-        self.text("=== Credits ===\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
+        self.text("Credits\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox, PopipopDEV\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
 
         self.keyReceiver = event => {
             if(event.down && event.main || event.cancel) {
@@ -235,49 +235,68 @@ async function start(loadTime){
         }
     })
 
-    engine.createScreen("game", self => {
-
-        // Player - Frisk texture
-
-        let playerBaseWidth = 20, playerBaseHeight = 30, playerSpriteMargin = 3, playerCurrentFrame, playerCollisionHeight = 11;
+    engine.createScreen("game", async self => {
 
         let world = {
             container: new PIXI.Container(),
-            map: new PIXI.Sprite(game.assets.map_test)
-        }
 
-        // Test!
-        world.container.addChild(world.map)
+            rooms: {
+                test: {
+                    map: new PIXI.Sprite(game.assets.map_test),
+
+                    // "Pixel-perfect" collision
+                    pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
+
+                    rectangleCollisions: [
+                        {x: 0, y: 0, width: 100, height: 100}
+                    ]
+                }
+            },
+
+            _room: 0,
+
+            get room(){
+                return world._room
+            },
+
+            set room(value){
+                if(!world.rooms[value]) return;
+
+                world._room = value
+                world.container.removeChildren()
+                world.container.addChild(world.rooms[value].map)
+            },
+
+            get currentRoom(){
+                return world.rooms[world._room]
+            }
+        }
 
         let player = {
 
             container: new PIXI.Container(),
 
+            baseWidth: 20,
+            baseHeight: 30,
+            collisionHeight: 11,
+
+            spriteMargin: 3,
+
+            currentFrame: null,
+
             sprite: new PIXI.Sprite(game.assets.frisk),
             collision: new PIXI.Graphics(),
 
-            frames: {
-                down0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                down1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                down2:  { x: (playerBaseWidth + playerSpriteMargin) * 2, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                down3:  { x: (playerBaseWidth + playerSpriteMargin) * 3, y: 0, width: playerBaseWidth, height: playerBaseHeight },
-                up0:    { x: (playerBaseWidth + playerSpriteMargin) * 0, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                up1:    { x: (playerBaseWidth + playerSpriteMargin) * 1, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                up2:    { x: (playerBaseWidth + playerSpriteMargin) * 2, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                up3:    { x: (playerBaseWidth + playerSpriteMargin) * 3, y: (playerBaseHeight * 2), width: playerBaseWidth, height: playerBaseHeight },
-                left0:  { x: (playerBaseWidth + playerSpriteMargin) * 0, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
-                left1:  { x: (playerBaseWidth + playerSpriteMargin) * 1, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
-                right0: { x: (playerBaseWidth + playerSpriteMargin) * 2, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
-                right1: { x: (playerBaseWidth + playerSpriteMargin) * 3, y: playerBaseHeight, width: playerBaseWidth, height: playerBaseHeight },
-            },
+            frames: {},
 
             setFrame(id, center = true){
-                if(id === playerCurrentFrame || !player.frames[id]) return;
+                if(id === player.currentFrame || !player.frames[id]) return false;
 
-                playerCurrentFrame = id
+                player.currentFrame = id
                 player.sprite.texture.frame = player.frames[id]
 
                 if(center) player.container.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
+                return true
             },
 
             get x(){
@@ -285,9 +304,38 @@ async function start(loadTime){
             },
 
             get y(){
-                return (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (playerBaseHeight - playerCollisionHeight);
-            }
+                return (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (player.baseHeight - player.collisionHeight);
+            },
 
+            speed: 2,
+
+            frameTimer: 0,
+            frameIndex: 0,
+
+            directions: ["left", "right", "up", "down"],
+            keyStates: [false, false, false, false],
+            
+            direction: 3,
+            walking: false
+
+        }
+
+        player.frames = {
+            down0:  { x: (player.baseWidth + player.spriteMargin) * 0, y: 0, width: player.baseWidth, height: player.baseHeight },
+            down1:  { x: (player.baseWidth + player.spriteMargin) * 1, y: 0, width: player.baseWidth, height: player.baseHeight },
+            down2:  { x: (player.baseWidth + player.spriteMargin) * 2, y: 0, width: player.baseWidth, height: player.baseHeight },
+            down3:  { x: (player.baseWidth + player.spriteMargin) * 3, y: 0, width: player.baseWidth, height: player.baseHeight },
+
+            up0:    { x: (player.baseWidth + player.spriteMargin) * 0, y: (player.baseHeight * 2), width: player.baseWidth, height: player.baseHeight },
+            up1:    { x: (player.baseWidth + player.spriteMargin) * 1, y: (player.baseHeight * 2), width: player.baseWidth, height: player.baseHeight },
+            up2:    { x: (player.baseWidth + player.spriteMargin) * 2, y: (player.baseHeight * 2), width: player.baseWidth, height: player.baseHeight },
+            up3:    { x: (player.baseWidth + player.spriteMargin) * 3, y: (player.baseHeight * 2), width: player.baseWidth, height: player.baseHeight },
+
+            left0:  { x: (player.baseWidth + player.spriteMargin) * 0, y: player.baseHeight, width: player.baseWidth, height: player.baseHeight },
+            left1:  { x: (player.baseWidth + player.spriteMargin) * 1, y: player.baseHeight, width: player.baseWidth, height: player.baseHeight },
+
+            right0: { x: (player.baseWidth + player.spriteMargin) * 2, y: player.baseHeight, width: player.baseWidth, height: player.baseHeight },
+            right1: { x: (player.baseWidth + player.spriteMargin) * 3, y: player.baseHeight, width: player.baseWidth, height: player.baseHeight },
         }
 
         let camera = {
@@ -309,29 +357,38 @@ async function start(loadTime){
             }
         }
 
-        let playerDirection = 3, playerWalking = false;
+        function collidesAt(playerX, playerY){
+            
+            // Pixel-Perfect collision mask
+            if(world.currentRoom.pixelCollisionMask) for(let y = Math.floor(playerY); y < Math.ceil(playerY) + player.collisionHeight; y++){
+                if(world.currentRoom.pixelCollisionMask[y]){
+                    for (const [startX, endX] of world.currentRoom.pixelCollisionMask[y]) {
+                        if(
+                            playerX < endX &&
+                            playerX + player.baseWidth > startX &&
+                            y >= playerY &&
+                            y < playerY + player.baseHeight
+                        ) return true
+                    }
+                }
+            }
 
-        let frameIndex = 0;
-        let frameTimer = 0;
-        let directions = ["left", "right", "up", "down"];
-        let keyStates = [false, false, false, false];
-
-        let playerSpeed = 2;
+            return false
+        }
 
         self.addTicker((delta) => {
-            let activeDirection = keyStates.indexOf(true);
+            const activeDirection = player.keyStates.indexOf(true);
 
-            playerWalking = activeDirection > -1;
+            player.walking = activeDirection > -1;
 
-            if (playerWalking) {
-
-                playerDirection = activeDirection
+            if (player.walking) {
+                player.direction = activeDirection;
 
                 let incrementX = 0, incrementY = 0;
 
                 // Calculate movement increment
-                if(keyStates[0]) incrementX += playerSpeed * delta; else if(keyStates[1]) incrementX -= playerSpeed * delta;
-                if(keyStates[2]) incrementY += playerSpeed * delta; else if(keyStates[3]) incrementY -= playerSpeed * delta;
+                if(player.keyStates[0]) incrementX += player.speed * delta; else if(player.keyStates[1]) incrementX -= player.speed * delta;
+                if(player.keyStates[2]) incrementY += player.speed * delta; else if(player.keyStates[3]) incrementY -= player.speed * delta;
                 
                 // Pre-calculate the value since it doesnt change
                 const playerX = player.x;
@@ -340,78 +397,31 @@ async function start(loadTime){
                 incrementX = Math.floor(incrementX)
                 incrementY = Math.floor(incrementY)
 
-                // Perform collision check
+                // Perform collision check - "Pixel-perfect" collisions
 
-                function collidesAt(playerX, playerY){
-                    for(let y = Math.floor(playerY); y < Math.ceil(playerY) + playerCollisionHeight; y++){
-                        if(window.mask[y]){
-                            for (const [startX, endX] of window.mask[y]) {
-                                if(
-                                    playerX < endX &&
-                                    playerX + playerBaseWidth > startX &&
-                                    y >= playerY &&
-                                    y < playerY + playerBaseHeight
-                                ) return true
-                            }
-                        }
-                    }
-                    return false
-                }
-                
                 // Perform final actions
                 if(!collidesAt(playerX, playerY + (incrementY * -1))) world.container.position.y += incrementY
                 if(!collidesAt(playerX + (incrementX * -1), playerY)) world.container.position.x += incrementX  
 
-
                 // Animation
-                frameTimer += delta;
-                if (frameTimer > (playerDirection > 1? 10: 5)) {
-                    frameTimer = 0;
-                    frameIndex = (frameIndex + 1) % (playerDirection > 1? 2: 4); // Loop through the 4 animation frames
+                player.frameTimer += delta;
+                if (player.frameTimer > (player.direction > 1? 10: 5)) {
+                    player.frameTimer = 0;
+                    player.frameIndex = (player.frameIndex + 1) % (player.direction > 1? 2: 4); // Loop through the 4 animation frames
                 }
 
-                player.setFrame(directions[playerDirection] + frameIndex);
+                player.setFrame(player.directions[player.direction] + player.frameIndex);
 
             } else {
 
                 // Idle frame
-                player.setFrame(directions[playerDirection] + "0");
+                player.setFrame(player.directions[player.direction] + "0");
 
             }
         });
-
-        // window.checkCollision = function checkCollision(mask) {
-        //     const playerX = (world.container.position.x * -1) + (screenCenterX - (player.sprite.width / 2));
-        //     const playerY = (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (playerBaseHeight - playerCollisionHeight);
-
-        //     console.log(playerX, playerY);
-            
-
-        //     const playerWidth = playerBaseWidth;
-        //     const playerHeight = playerCollisionHeight;
-        
-        //     // Loop through the mask rows that overlap with the player's vertical position
-        //     for (let y = Math.floor(playerY); y < Math.ceil(playerY + playerHeight); y++) {
-        //         if (mask[y]) {
-        //             for (const [startX, endX] of mask[y]) {
-        //                 // Check if the player's rectangle overlaps with this segment
-        //                 if (
-        //                     playerX < endX &&             // Player's left is before segment's end
-        //                     playerX + playerWidth > startX && // Player's right is after segment's start
-        //                     y >= playerY &&                // Player's top is at or below the segment's row
-        //                     y < playerY + playerHeight    // Player's bottom is above the segment's row
-        //                 ) {
-        //                     return true; // Collision detected
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     return false; // No collision detected
-        // }
         
         self.keyReceiver = event => {
-            keyStates[event.direction] = event.down;
+            player.keyStates[event.direction] = event.down;
         }
 
         game.world = { camera, player, world }
@@ -427,7 +437,9 @@ async function start(loadTime){
         
         self.onActivated(() => {
             camera.scale = camera._scale;
-            player.setFrame("front0")
+            player.setFrame("down0")
+
+            world.room = "test"
 
             // Fixes a PIXI.js bug somehow
             setTimeout(() => {

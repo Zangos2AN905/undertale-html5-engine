@@ -184,7 +184,7 @@ function Engine(element, options){
             }, object)
         }
 
-        createScreen(id, selfCallback){
+        async createScreen(id, selfCallback){
             let container = new PIXI.Container(), events = {
                 activate: []
             };
@@ -211,12 +211,16 @@ function Engine(element, options){
                 }
             })
 
-            if(selfCallback) selfCallback(game.screens[id])
+            if(selfCallback) game.screens[id].loadPromise = selfCallback(game.screens[id]);
+
+            await game.screens[id].loadPromise;
 
             return game.screens[id]
         }
 
-        switchScreen(id) {
+        async switchScreen(id) {
+            if(game.screens[id].loadPromise) await game.screens[id].loadPromise;
+
             app.stage.removeChildren();
             game.keyReceiver = viewPort.onclick = game.screens[id].keyReceiver || null
 

@@ -91,14 +91,13 @@ LS.once("body-available", async function () {
 
     // Move on to game.js
     start(loadTime)
-    window.mask = await Engine.misc.loadCollisionMask("/assets/maps/test/collision.png");
 
     // Debug
-    return engine.switchScreen("game")
+    // return engine.switchScreen("game")
 
 
     // Start the splash screen
     setTimeout(() => {
-        engine.switchScreen("menu")
+        engine.switchScreen("splash")
     }, delay)
 })

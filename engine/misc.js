@@ -1,5 +1,5 @@
 Engine.misc = {
-    loadCollisionMask(imageUrl) {
+    createCollisionMask(imageUrl) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.src = imageUrl;

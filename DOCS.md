@@ -49,12 +49,14 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 - Text rendering
     -
     There is an advanced text renderer.
-    Let's go over some basics:
+    Let's go over some basics:<br><br>
+    Print simple text
     ```js
-    // Print simple text
     engine.text("Hi")
+    ```
 
-    // Basic options
+    Basic options
+    ```js
     engine.text("Hello world!", {
         textAlign: "center",
         x: "center",
@@ -62,8 +64,10 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
         scale: 1.2,
         nextDelay: 50 // Delay between characters
     })
+    ```
 
-    // Advanced effects - do something on every char
+    Advanced effects - do something on every character
+    ```js
     engine.text("Hello world!", {
         textAlign: "center",
         x: "center",
@@ -91,8 +95,10 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
             // Here you can also attach a ticker with self.addTicker to make animations
         }
     })
+    ```
 
-    // Editing text after creation
+    Editing text after creation
+    ```js
     let text = engine.text("Hi", {y: 32})
 
     text.color(0xff0000) // set color to red (replaces all!)
@@ -106,5 +112,29 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 
     // Do this after you no longer need it
     text.destroy()
+    ```
+<br>
+
+- Rooms
+    -
+    Now that we can create screens and reder text, let's actually make a game.
+    ```js
+    // Start by making a screen for your world
+    engine.createScreen("game", self => {
+        
+        // Create a game world
+        let { world, player, camera } = engine.createWorld()
+
+        // Add the world camera to your screen 
+        self.add(camera)
+
+
+        self.onActivated(() => {
+            world.initialize()
+
+            world.room = "test" // Switch to our room
+        })
+
+    })
 
     ```
