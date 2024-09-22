@@ -267,14 +267,14 @@ async function start(loadTime){
 
         world.rooms = {
             test: {
-                baseTexture: game.assets.map_test,
+                baseTexture: game.assets.map_snow,
 
                 layers: {
                     
                 },
 
                 // "Pixel-perfect" collision
-                pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
+                // pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
 
                 defaultSpawn: {x: 100, y: 50},
 
@@ -306,6 +306,8 @@ async function start(loadTime){
         
         self.onActivated(() => {
             world.initialize()
+
+            world.changeRoom("test")
         })
     })
 

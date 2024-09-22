@@ -5,7 +5,7 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 
 - Initization
     -
-    Start by adding a start function somewhere in your code.<br>
+    Start by going to /game/game.js - if its not empty you can clear it. This file contains all of your game logic. (Or use any other file where you put the "start" function").<br>
     This function is called in the constructor.js file at the end, after the engine and all assets are loaded.
     ```js
     async function start(){
@@ -168,3 +168,4 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
     })
 
     ```
+    This should setup a simple world where you can move around.
