@@ -128,11 +128,32 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
         // Add the world camera to your screen 
         self.add(camera)
 
+        // Create a room
+        world.createRoom("test", {
+            // Base texture for your map
+            baseTexture: game.assets.map_test,
+
+            // "Pixel-perfect" collision
+            // pixelCollisionMask: yourPixelCollisionMask,
+
+            defaultSpawn: {x: 100, y: 50},
+
+            // Objects. Solid means the player cannot go through the object.
+            objects: [
+                {solid: true, x: 0, y: 0, width: 100, height: 100, onEnter(){
+                    // "trigger" behavior
+                }}
+            ],
+
+            // Note: By default, objcets are only a rect, and do not have any visuals.
+
+            // ... and more options ...
+        })
 
         self.onActivated(() => {
             world.initialize()
 
-            world.room = "test" // Switch to our room
+            world.changeRoom("test") // Switch to our room
         })
 
     })

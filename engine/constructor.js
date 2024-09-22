@@ -51,6 +51,7 @@ LS.once("body-available", async function () {
             frisk: "/assets/sprites/player/frisk.png",
 
             map_test: "/assets/maps/test/map.png",
+            map_slope: "/assets/maps/slopetest/map.png",
         },
 
         screens: {},
@@ -59,7 +60,7 @@ LS.once("body-available", async function () {
             controls: {
                 main: ["z", "enter"],
                 cancel: ["x"],
-                directions: ["arrowleft", "arrowright", "arrowup", "arrowdown"] // left, right, up, down
+                directions: ["arrowup", "arrowdown", "arrowleft", "arrowright"] // up, down, left, right
             }
         },
 

@@ -266,20 +266,12 @@ async function start(loadTime){
         let world = {
             container: new PIXI.Container(),
 
-            rooms: {
-                test: {
-                    map: new PIXI.Sprite(game.assets.map_test),
+            mapSprite: new PIXI.Sprite(),
 
-                    // "Pixel-perfect" collision
-                    pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
+            rooms: {},
 
-                    // Objects
-                    objects: [
-                        {solid: true, x: 0, y: 0, width: 100, height: 100, colideMovement(rect, cx, cy){
-                            console.log(rect, cx, cy);
-                        }}
-                    ]
-                }
+            createRoom(id, options){
+                world.rooms[id] = options
             },
 
             _room: 0,
@@ -288,16 +280,33 @@ async function start(loadTime){
                 return world._room
             },
 
-            set room(value){
+            changeRoom(value){
                 if(!world.rooms[value]) return;
+
+                let room = world.rooms[value];
 
                 world._room = value
                 world.container.removeChildren()
-                world.container.addChild(world.rooms[value].map)
+
+                world.mapSprite.texture = room.baseTexture
+                world.container.addChild(world.mapSprite)
+
+                player.x = room.defaultSpawn? room.defaultSpawn.x: 0
+                player.y = room.defaultSpawn? room.defaultSpawn.y: 0
+                // camera.update()
+                // world.container.addChild(world.rooms[value].map)
             },
 
             get currentRoom(){
                 return world.rooms[world._room]
+            },
+
+            initialize(){
+                camera.scale = camera._scale;
+                player.setFrame("down0")
+                setTimeout(() => {
+                    camera.container.visible = true
+                }, 0)
             }
         }
 
@@ -318,22 +327,33 @@ async function start(loadTime){
 
             frames: {},
 
-            setFrame(id, center = true){
+            setFrame(id){
                 if(id === player.currentFrame || !player.frames[id]) return false;
 
                 player.currentFrame = id
                 player.sprite.texture.frame = player.frames[id]
-
-                if(center) player.container.position =  {x: screenCenterX - (player.sprite.width / 2), y: screenCenterY - (player.sprite.height / 2)}
                 return true
             },
 
+            _x: 0,
+            _y: 0,
+
             get x(){
-                return (world.container.position.x * -1) + (screenCenterX - (player.sprite.width / 2));
+                return player._x
+            },
+
+            set x(value){
+                player._x = value
+                camera.updateX()
             },
 
             get y(){
-                return (world.container.position.y * -1) + (screenCenterY - (player.sprite.height / 2)) + (player.baseHeight - player.collisionHeight);
+                return player._y
+            },
+
+            set y(value){
+                player._y = value
+                camera.updateY()
             },
 
             speed: 2,
@@ -341,7 +361,7 @@ async function start(loadTime){
             frameTimer: 0,
             frameIndex: 0,
 
-            directions: ["left", "right", "up", "down"],
+            directions: ["up", "down", "left", "right"],
             keyStates: [false, false, false, false],
             
             direction: 3,
@@ -367,11 +387,39 @@ async function start(loadTime){
             right1: { x: (player.baseWidth + player.spriteMargin) * 3, y: player.baseHeight, width: player.baseWidth, height: player.baseHeight },
         }
 
+        world.rooms = {
+            test: {
+                baseTexture: game.assets.map_test,
+
+                layers: {
+                    
+                },
+
+                // "Pixel-perfect" collision
+                pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
+
+                defaultSpawn: {x: 100, y: 50},
+
+                // Objects
+                objects: [
+                    {solid: true, x: 0, y: 0, width: 100, height: 100}
+                ]
+            },
+            test1: {
+                baseTexture: game.assets.map_slope,
+
+                layers: {
+
+                },
+
+                objects: [
+                    {solid: true, x: 245, y: 132, width: 15, height: 12}
+                ]
+            }
+        }
+
         let camera = {
             _scale: 2,
-
-            _worldX: 0,
-            _worldY: 0,
 
             container: new PIXI.Container(),
 
@@ -382,8 +430,67 @@ async function start(loadTime){
             set scale(value){
                 camera._scale = value
                 camera.container.scale = {x: value, y: value}
-                camera.container.position = {x: (screenCenterX * (value -1)) * -1, y: (screenCenterY * (value -1)) * -1}
-            }
+                // camera.container.position = {x: (screenCenterX * (value -1)) * -1, y: (screenCenterY * (value -1)) * -1}
+            },
+
+            _x: 0,
+            _y: 0,
+
+            get x(){
+                return camera._x
+            },
+
+            set x(value){
+                camera._x = value
+                camera.container.position.x = value
+            },
+
+            get y(){
+                return camera._y
+            },
+
+            set y(value){
+                camera._y = value
+                camera.container.position.y = value
+            },
+
+            updateX(){
+                // Update world and player position
+                
+                const centerX = screenCenterX / camera._scale;
+
+                const mapWidth = world.mapSprite.width;
+
+                // Adjust for player collision
+                const playerX = player.x;
+
+                if(playerX < centerX || mapWidth <= screenCenterX){
+                    world.container.position.x = 0;
+                    player.container.position.x = playerX;
+                } else {
+                    world.container.position.x = - playerX + centerX;
+                    player.container.position.x = centerX;
+                }
+            },
+
+            updateY(){
+                // Update world and player position
+
+                const centerY = screenCenterY / camera._scale;
+
+                const mapHeight = world.mapSprite.height;
+
+                // Adjust for player collision
+                const playerY = player.y - (player.baseHeight - player.collisionHeight);
+
+                if(playerY < centerY || mapHeight <= screenCenterY){
+                    world.container.position.y = 0;
+                    player.container.position.y = playerY;
+                } else {
+                    world.container.position.y = - playerY + centerY;
+                    player.container.position.y = centerY;
+                }
+            },
         }
 
         self.addTicker((delta) => {
@@ -397,34 +504,33 @@ async function start(loadTime){
                 let incrementX = 0, incrementY = 0;
 
                 // Calculate movement increment
-                if(player.keyStates[0]) incrementX += player.speed * delta; else if(player.keyStates[1]) incrementX -= player.speed * delta;
-                if(player.keyStates[2]) incrementY += player.speed * delta; else if(player.keyStates[3]) incrementY -= player.speed * delta;
-                
-                // Pre-calculate the value since it doesnt change
-                const playerX = player.x;
-                const playerY = player.y;
+                if(player.keyStates[2]) incrementX -= player.speed * delta; else if(player.keyStates[3]) incrementX += player.speed * delta;
+                if(player.keyStates[0]) incrementY -= player.speed * delta; else if(player.keyStates[1]) incrementY += player.speed * delta;
 
-                incrementX = Math.floor(incrementX)
-                incrementY = Math.floor(incrementY)
+                // Floor movement - Can help achieve more pixel-perfect movement but is less smooth
+                // incrementX = Math.floor(incrementX)
+                // incrementY = Math.floor(incrementY)
 
                 // Perform collision check
-                let collision = engine.collides(world, {
-                    x: playerX,
-                    y: playerY,
+                const collision = engine.collides(world, {
+                    x: player.x,
+                    y: player.y,
                     width: player.baseWidth,
                     height: player.collisionHeight
-                }, incrementX * -1, incrementY * -1)
+                }, incrementX, incrementY)
 
                 // Move player
-                if(!collision[0]) world.container.position.x += incrementX  
-                if(!collision[1]) world.container.position.y += incrementY
+                if(!collision[0]) player.x += incrementX;
+                if(!collision[1]) player.y += incrementY;
 
-                // Animation
-                player.frameTimer += delta;
-                if (player.frameTimer > (player.direction > 1? 10: 5)) {
-                    player.frameTimer = 0;
-                    player.frameIndex = (player.frameIndex + 1) % (player.direction > 1? 2: 4); // Loop through the 4 animation frames
-                }
+                if(player.direction < 2? !collision[1]: !collision[0]){
+                    // Animation
+                    player.frameTimer += delta;
+                    if (player.frameTimer > 15 - (player.speed * 2)) {
+                        player.frameTimer = 0;
+                        player.frameIndex = (player.frameIndex + 1) % (player.direction < 2? 4: 2); // Loop through the 4 animation frames
+                    }
+                } else player.frameIndex = 0;
 
                 player.setFrame(player.directions[player.direction] + player.frameIndex);
 
@@ -434,6 +540,7 @@ async function start(loadTime){
                 player.setFrame(player.directions[player.direction] + "0");
 
             }
+
         });
         
         self.keyReceiver = event => {
@@ -452,15 +559,7 @@ async function start(loadTime){
         camera.container.visible = false
         
         self.onActivated(() => {
-            camera.scale = camera._scale;
-            player.setFrame("down0")
-
-            world.room = "test"
-
-            // Fixes a PIXI.js bug somehow
-            setTimeout(() => {
-                camera.container.visible = true
-            }, 0)
+            world.initialize()
         })
     })
 
