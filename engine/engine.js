@@ -185,6 +185,8 @@ function Engine(element, options){
         }
 
         async createScreen(id, selfCallback){
+            if(game.screens[id]) return game.screens[id];
+
             let container = new PIXI.Container(), events = {
                 activate: []
             };
@@ -236,6 +238,91 @@ function Engine(element, options){
 
         screen(id){
             return game.screens[id]
+        }
+
+        createWorld(options){
+            let world;
+            let player;
+            let camera;
+
+            return { world, player, camera }
+        }
+
+        collides(world, rect, incrementX = 0, incrementY = 0){
+            let result = [false, false]
+
+            /*
+                A fast collision checker that checks for bounds, rectangle and pixel collisions on both X and Y coordinates
+            */
+
+            // Room bounds
+            if(world.currentRoom.bounds) {
+                result = [!engine.AABB(rect, world.currentRoom.bounds, incrementX, 0), !engine.AABB(rect, world.currentRoom.bounds, 0, incrementY)]
+            }
+
+            // Rectangle based collisions
+            if(world.currentRoom.objects) for(let object of world.currentRoom.objects){
+                const colidesX = engine.AABB(rect, object, incrementX, 0);
+                const colidesY = engine.AABB(rect, object, 0, incrementY);
+
+                if(colidesX || colidesY){
+                    if(object.onMovement) object.onMovement(rect, colidesX, colidesY);
+                    if(object.onEnter) object.onEnter(rect, colidesX, colidesY);
+                    if(object.onLeave) object.onLeave(rect, colidesX, colidesY);
+
+                    if(object.solid) {
+                        if(colidesX) result[0] = true
+                        if(colidesY) result[1] = true
+
+                        if(colidesX && colidesY) return result;
+                    }
+                }
+            }
+
+            // Pixel-Perfect collision mask
+            if(world.currentRoom.pixelCollisionMask) {
+                if(!result[0]) result[0] = engine.pixelCollision(world.currentRoom.pixelCollisionMask, rect, incrementX, 0)
+                if(!result[1]) result[1] = engine.pixelCollision(world.currentRoom.pixelCollisionMask, rect, 0, incrementY)
+            }
+
+            return result
+        }
+
+        pixelCollision(mask, rect, incrementX, incrementY){
+            const positionX = rect.x + incrementX;
+            const positionY = rect.y + incrementY;
+
+            /*
+                The engine offers a pixel-collision detection with its own mask format, designed to be as efficient as possible.
+                You can create a mask from an image using the createCollisionMask function found in engine/misc.js
+            */
+
+            for(let y = Math.floor(positionY); y < Math.ceil(positionY) + rect.height; y++){
+                if(mask[y]){
+                    for (const [startX, endX] of mask[y]) {
+                        if(
+                            positionX < endX &&
+                            positionX + rect.width > startX &&
+                            y >= positionY &&
+                            y < positionY + rect.height
+                        ) return true
+                    }
+                }
+            }
+
+            return false
+        }
+
+        AABB(rect, rect2, incrementX = 0, incrementY = 0) {
+            const positionX = rect.x + incrementX;
+            const positionY = rect.y + incrementY;
+
+            return (
+                positionX < rect2.x + rect2.width &&
+                positionX + rect.width > rect2.x &&
+                positionY < rect2.y + rect2.height &&
+                positionY + rect.height > rect2.y
+            );
         }
 
         text(text, options = {}){

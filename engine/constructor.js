@@ -93,8 +93,7 @@ LS.once("body-available", async function () {
     start(loadTime)
 
     // Debug
-    // return engine.switchScreen("game")
-
+    return engine.switchScreen("game")
 
     // Start the splash screen
     setTimeout(() => {

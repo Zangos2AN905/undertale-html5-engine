@@ -15,7 +15,7 @@ async function start(loadTime){
 
     let screenCenterX = app.screen.width / 2, screenCenterY = app.screen.height / 2;
 
-    // Splash screen
+
     engine.createScreen("splash", self => {
         const logo = new PIXI.Sprite(game.assets.logo);
 
@@ -53,7 +53,6 @@ async function start(loadTime){
             }
         })
     })
-
 
     engine.createScreen("menu", self => {
 
@@ -226,13 +225,40 @@ async function start(loadTime){
 
     engine.createScreen("credits", self => {
 
-        self.text("Credits\n\nProgramming, engine: TheLSTV\nSprites: Z3R0, TheLSTV, Toby Fox, PopipopDEV\nSound: TheLSTV, Toby Fox\nFont: Jayvee Enaguas\nIdeas: Toby Fox\nU logo: \x81\n\nSpecial thanks: Toby Fox")
+        self.text("Credits", {
+            textAlign: "center",
+            x: "center",
+            y: 32,
+            scale: 1.4,
+            color: 0xffff00
+        })
+
+        self.text("\uAA03Programming, engine:\uAA00 TheLSTV\n\uAA03Sprites:\uAA00 Z3R0, TheLSTV, Toby Fox, PopipopDEV\n\uAA03Sound, music:\uAA00 TheLSTV, Toby Fox\n\uAA03Fonts:\uAA00 Jayvee Enaguas, UnnamedConlanger\n\n\n\uAA01Special thanks to Toby Fox!\n\n\uAA02Website: https://lstv.space", {
+            x: 20, y: 100,
+            iterator(position, options){
+                switch(position.char){
+                    case "\uAA00":
+                        options.color = 0xeeee00
+                    break
+                    case "\uAA01":
+                        options.color = 0xff54fc
+                    break
+                    case "\uAA02":
+                        options.color = 0x0080ff; options.scale = .8
+                    break
+                    case "\uAA03":
+                        options.color = 0xffffff
+                    break
+                }
+            }
+        })
 
         self.keyReceiver = event => {
             if(event.down && event.main || event.cancel) {
                 engine.switchScreen("menu")
             }
         }
+
     })
 
     engine.createScreen("game", async self => {
@@ -247,8 +273,11 @@ async function start(loadTime){
                     // "Pixel-perfect" collision
                     pixelCollisionMask: await Engine.misc.createCollisionMask("/assets/maps/test/collision.png"),
 
-                    rectangleCollisions: [
-                        {x: 0, y: 0, width: 100, height: 100}
+                    // Objects
+                    objects: [
+                        {solid: true, x: 0, y: 0, width: 100, height: 100, colideMovement(rect, cx, cy){
+                            console.log(rect, cx, cy);
+                        }}
                     ]
                 }
             },
@@ -357,25 +386,6 @@ async function start(loadTime){
             }
         }
 
-        function collidesAt(playerX, playerY){
-            
-            // Pixel-Perfect collision mask
-            if(world.currentRoom.pixelCollisionMask) for(let y = Math.floor(playerY); y < Math.ceil(playerY) + player.collisionHeight; y++){
-                if(world.currentRoom.pixelCollisionMask[y]){
-                    for (const [startX, endX] of world.currentRoom.pixelCollisionMask[y]) {
-                        if(
-                            playerX < endX &&
-                            playerX + player.baseWidth > startX &&
-                            y >= playerY &&
-                            y < playerY + player.baseHeight
-                        ) return true
-                    }
-                }
-            }
-
-            return false
-        }
-
         self.addTicker((delta) => {
             const activeDirection = player.keyStates.indexOf(true);
 
@@ -397,11 +407,17 @@ async function start(loadTime){
                 incrementX = Math.floor(incrementX)
                 incrementY = Math.floor(incrementY)
 
-                // Perform collision check - "Pixel-perfect" collisions
+                // Perform collision check
+                let collision = engine.collides(world, {
+                    x: playerX,
+                    y: playerY,
+                    width: player.baseWidth,
+                    height: player.collisionHeight
+                }, incrementX * -1, incrementY * -1)
 
-                // Perform final actions
-                if(!collidesAt(playerX, playerY + (incrementY * -1))) world.container.position.y += incrementY
-                if(!collidesAt(playerX + (incrementX * -1), playerY)) world.container.position.x += incrementX  
+                // Move player
+                if(!collision[0]) world.container.position.x += incrementX  
+                if(!collision[1]) world.container.position.y += incrementY
 
                 // Animation
                 player.frameTimer += delta;
@@ -448,5 +464,11 @@ async function start(loadTime){
         })
     })
 
-    engine.createScreen("gameover")
+    engine.createScreen("fight", self => {
+        // Fight
+    })
+
+    engine.createScreen("gameover", self => {
+        // Game over
+    })
 }
