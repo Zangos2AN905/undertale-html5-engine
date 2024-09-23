@@ -2,7 +2,7 @@ let app, engine, viewPort, game;
 
 /*
     This is the first file that runs and is responsible for initization of the engine and other game related objects + loading assets.
-    No game logic is to be found here.
+    No game logic should be found here.
 */
 
 LS.once("body-available", async function () {
@@ -33,7 +33,7 @@ LS.once("body-available", async function () {
     engine.onAppAvailable()
 
 
-    let DEBUG_MODE = false;
+    let DEBUG_MODE = true;
 
     game = {
         engine,
@@ -72,9 +72,13 @@ LS.once("body-available", async function () {
         set debug(value){
             DEBUG_MODE = !!value
 
+            // app.renderer.resolution = DEBUG_MODE? 2: 1;
+
             O("body").class("debug", DEBUG_MODE)
         }
     }
+
+    game.debug = DEBUG_MODE;
 
     for(let id in game.assets){
         game.assets[id] = await PIXI.Assets.load(game.assets[id])
@@ -88,6 +92,39 @@ LS.once("body-available", async function () {
     }
 
     viewPort.add(app.view);
+
+    O(app.view).on("wheel", event => {
+        if(DEBUG_MODE){
+            if(false && event.ctrlKey){
+                let rect = app.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
+
+                const worldPosBeforeZoom = {
+                    x: (mouseX - game.world.camera.x) / game.world.camera.scale,
+                    y: (mouseY - game.world.camera.y) / game.world.camera.scale
+                };
+
+                game.world.camera.scale = Math.max(0.4, game.world.camera.scale - (event.deltaY / 200));
+
+                // Recalculate world position after zoom
+                const worldPosAfterZoom = {
+                    x: (mouseX - game.world.camera.x) / game.world.camera.scale,
+                    y: (mouseY - game.world.camera.y) / game.world.camera.scale
+                };
+
+                // Adjust the camera's position to anchor zoom to the mouse position
+                game.world.camera.x += (worldPosAfterZoom.x - worldPosBeforeZoom.x) * game.world.camera.scale;
+                game.world.camera.y += (worldPosAfterZoom.y - worldPosBeforeZoom.y) * game.world.camera.scale;
+
+                // game.world.camera.scale = Math.max(0.4, game.world.camera.scale - (event.deltaY / 1000))
+                // game.world.camera.x 
+                // game.world.camera.y 
+            } else {
+                game.world.camera[event.shiftKey? "x": "y"] -= event.deltaY
+            }
+
+            event.preventDefault()
+        }
+    })
 
     let loadTime = Date.now() - (window.tsl || Date.now()), delay = Math.max(1000 - loadTime, 0);
 

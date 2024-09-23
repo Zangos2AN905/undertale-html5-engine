@@ -352,7 +352,6 @@ function Engine(element, options){
                 currentFrame: null,
     
                 sprite: new PIXI.Sprite(game.assets.frisk),
-                collision: new PIXI.Graphics(),
     
                 frames: {},
     
@@ -430,7 +429,8 @@ function Engine(element, options){
                 set scale(value){
                     camera._scale = value
                     camera.container.scale = {x: value, y: value}
-                    // camera.container.position = {x: (screenCenterX * (value -1)) * -1, y: (screenCenterY * (value -1)) * -1}
+                    camera.updateX()
+                    camera.updateY()
                 },
     
                 _x: 0,
@@ -456,15 +456,13 @@ function Engine(element, options){
     
                 updateX(){
                     // Update world and player position
-                    
-                    const centerX = screenCenterX / camera._scale;
-    
-                    const mapWidth = world.mapSprite.width;
+
+                    const centerX = (screenCenterX / camera._scale) - (player.sprite.width / 2);
     
                     // Adjust for player collision
                     const playerX = player.x;
-    
-                    if(playerX < centerX || mapWidth <= screenCenterX){
+
+                    if(playerX < centerX || world.mapSprite.width <= screenCenterX){
                         world.container.position.x = 0;
                         player.container.position.x = playerX;
                     } else {
@@ -475,15 +473,13 @@ function Engine(element, options){
     
                 updateY(){
                     // Update world and player position
-    
-                    const centerY = screenCenterY / camera._scale;
-    
-                    const mapHeight = world.mapSprite.height;
-    
+
+                    const centerY = (screenCenterY / camera._scale) - (player.sprite.height / 2);
+
                     // Adjust for player collision
                     const playerY = player.y - (player.baseHeight - player.collisionHeight);
     
-                    if(playerY < centerY || mapHeight <= screenCenterY){
+                    if(playerY < centerY || world.mapSprite.height <= screenCenterY){
                         world.container.position.y = 0;
                         player.container.position.y = playerY;
                     } else {
@@ -499,7 +495,11 @@ function Engine(element, options){
             camera.container.addChild(player.container)
             camera.container.visible = false
 
-            return { world, player, camera }
+            let undertale = {
+
+            }
+
+            return { world, player, camera, undertale }
         }
 
         collides(world, rect, incrementX = 0, incrementY = 0){

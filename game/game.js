@@ -263,7 +263,7 @@ async function start(loadTime){
 
     engine.createScreen("game", async self => {
 
-        let { world, player, camera } = engine.createWorld()
+        let { world, player, camera, undertale } = engine.createWorld()
 
         world.rooms = {
             test: {

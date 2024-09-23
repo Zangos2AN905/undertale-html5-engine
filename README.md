@@ -7,7 +7,7 @@ The engine features a fast and feature-rich text renderer that can handle basica
 On top of that, it features all the standard features like scenes, rooms, fast collisions (pixel-perfect and rectangle modes), universal event handling, etc.<br>
 It makes creating Undertale fangames a lot easier.
 <br><br>
-Check out /game/game.js to see sample game logic and /engine/engine.js for the engine logic.
+Check out /game/sample.js to see sample game logic and /engine/engine.js for the engine.
 <br><br>Written entirely in JS and GLSL.<br>
 Version 1.0 [alpha 2.1]<br>
 
@@ -31,7 +31,7 @@ The engine uses PIXI.js v7 as the renderer. (Not v8 at this moment since it is a
 To package/build to export for static platforms (eg. native application), you can use the `akeno bundle -a` command to create a ready-to-use offline package. The "-a" flag is required to keep the original structure and include all assets, otherwise the bundler will ignore them.<br>
 - **Without Akeno:** you should be able to use a pre-compiled version of index.html and it should just work like a static web app (i think).
 
-### Can you guess which screenshot is from the actual game and which is from this engine? They are literaly indistinguishible (0% difference)
+### Can you guess which screenshot is from the actual game and which is from this engine? (You cannot, there is 0% difference)
 ![Group 356 (1)](https://github.com/user-attachments/assets/9bc721a4-4dad-46fb-9c71-7532c0c4756b)
 
 
