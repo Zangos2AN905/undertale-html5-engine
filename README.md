@@ -26,14 +26,17 @@ The engine uses PIXI.js v7 as the renderer. (Not v8 at this moment since it is a
 
 <br>
 
+### Can you guess which screenshot is from the actual game and which is from this engine? (You cannot, there is 0% difference)
+![Group 356 (1)](https://github.com/user-attachments/assets/9bc721a4-4dad-46fb-9c71-7532c0c4756b)
+
+![download (1)](https://github.com/user-attachments/assets/5001d623-c373-41a9-941d-92f457b30fd1)
+
+### Map editor
+This is still too early in development, but we are working on a full blown map editor to make it easy to create maps!<br>
+Who knows, maybe one day it will become an entire SDK.<br>
+![Screenshot from 2024-09-24 00-52-35](https://github.com/user-attachments/assets/d447dc0e-c3bd-4324-937c-bef22999730c)
+
 ### Build instructions
 - **With Akeno:** Simply clone the repo, add the directory to your Akeno app list and you are done, you can run the game from the local server.<br>
 To package/build to export for static platforms (eg. native application), you can use the `akeno bundle -a` command to create a ready-to-use offline package. The "-a" flag is required to keep the original structure and include all assets, otherwise the bundler will ignore them.<br>
 - **Without Akeno:** you should be able to use a pre-compiled version of index.html and it should just work like a static web app (i think).
-
-### Can you guess which screenshot is from the actual game and which is from this engine? (You cannot, there is 0% difference)
-![Group 356 (1)](https://github.com/user-attachments/assets/9bc721a4-4dad-46fb-9c71-7532c0c4756b)
-
-
-
-![download (1)](https://github.com/user-attachments/assets/5001d623-c373-41a9-941d-92f457b30fd1)
