@@ -138,12 +138,8 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 
             defaultSpawn: {x: 100, y: 50},
 
-            // Objects. Solid means the player cannot go through the object.
-            objects: [
-                {solid: true, x: 0, y: 0, width: 100, height: 100, onEnter(){
-                    // "trigger" behavior
-                }}
-            ],
+            // Objects. More in the "Room objects" section
+            objects: [],
 
             // Note: By default, objcets are only a rect, and do not have any visuals.
 
@@ -169,3 +165,88 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 
     ```
     This should setup a simple world where you can move around.
+
+- Room objects
+    -
+    Lets take a closer look at all of the options you can have in a room object:
+    ```js
+    {
+        solid: true, // If false, the player can walk through the object
+
+        slope: false, // Makes the object behave like a slope
+
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+
+        onEnter(rect, incrementX, incrementY, colidesX, colidesY){
+            // Called when the player enters/touches the object
+        },
+
+        onMovement(rect, incrementX, incrementY, colidesX, colidesY){
+            // Called when the player moves within or along the object
+        },
+
+        onEnter(rect, incrementX, incrementY, colidesX, colidesY){
+            // Called when the player leaves the object
+        }
+
+        // For events, "rect" is the rect of the player *before* moving. Increment x and y tell you the direction in pixels the player is about to make and colides x/y tell you which direction the player is going from (both will be true if the player is inside).
+    }
+    ```
+    Note that objects have no visual or sprite attached by default, they only exist as an independent rectangle.
+    
+    ### To attach a visual sprite to the object
+    This is impossible with regular objects, but can be achieved with:
+    ```js
+    let myObject = engine.createVisualObject(room, {
+        // ... same options as a regular object ...
+
+        baseTexture: texture, // Optional
+
+        followDimension: false // Copy the object width and height to the visual
+    })
+
+    // To add the object, simply push it
+    room.objects.push(myObject)
+    ```
+
+- Collisions
+    -
+    The engine offers three main collision mechanisms out of the box.<br>
+    You can combine them all at once depending on your needs. <br>
+
+
+    ### 1. Pixel-perfect collisions
+    A highly optimized, fast and accurate collision checking.<br>
+    It works by pre-computing rows of a collision mask (image of the same resolution as the map, where non-transparent pixels are solid) and creating arrays of where a collision starts and ends.<br><br>
+    Advantages:
+    - Very fast, simple to create
+    - Pixel accuracy (can be any shape)
+    - Spatial filtering (filters which rows or columns to proccess based on position)
+
+    Disadvantages:
+    - Static (cannot be dynamically changed, and there can only be one)
+    - Requires pre-computation, more difficult to manage
+    - Very basic
+
+    How to pre-compute:<br>
+    Use the "createCollisionMask" function from /engine/misc.js, passing it the URL of your collision mask as an image.<br>
+    Warning: precomputing is a very expensive task, you should always ship an already computed mask and pass it directly, don't do it on each run.
+    
+    ### 2. AABB (Rectangle) collisions
+    Collisions that compare an AABB (box/object/rectangle) to the AABB of the player's collision. <br>
+    This method may be faster or slower than pixel collisions, depending on the amount of objects you have - currently, the engine has to iterate and check every single object.<br><br>
+    Advantages:
+    - Fully dynamic, can be modified at runtime
+    - Allows events (enter, move, leave)
+    - Custom behavior supported
+
+    Disadvantages:
+    - Shape can only be a rectangle
+    - Requires a special program to create
+    - Slower if you have lots of objects
+
+    ### 3. Bounding box
+    This is the same as the previous (AABB), but is a special inverse check to limit the player from leaving bounds.

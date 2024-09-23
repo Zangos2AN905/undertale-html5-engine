@@ -307,17 +307,7 @@ function Engine(element, options){
                         // incrementX = Math.floor(incrementX)
                         // incrementY = Math.floor(incrementY)
         
-                        // Perform collision check
-                        const collision = engine.collides(world, {
-                            x: player.x,
-                            y: player.y,
-                            width: player.baseWidth,
-                            height: player.collisionHeight
-                        }, incrementX, incrementY)
-        
-                        // Move player
-                        if(!collision[0]) player.x += incrementX;
-                        if(!collision[1]) player.y += incrementY;
+                        let collision = player.moveBy(incrementX, incrementY, true)
         
                         if(player.direction < 2? !collision[1]: !collision[0]){
                             // Animation
@@ -382,6 +372,26 @@ function Engine(element, options){
                 set y(value){
                     player._y = value
                     camera.updateY()
+                },
+
+                moveBy(incrementX, incrementY, naturalMovement){
+                    const collision = engine.collides(world, {
+                        x: player._x,
+                        y: player._y,
+                        width: player.baseWidth,
+                        height: player.collisionHeight
+                    }, incrementX, incrementY, naturalMovement)
+    
+                    // Move player
+                    if(!collision[0]) player.x += incrementX;
+                    if(!collision[1]) player.y += incrementY;
+
+                    return collision
+                },
+
+                fixPixelPosition(){
+                    player.x = Math.floor(player._x)
+                    player.y = Math.floor(player._y)
                 },
     
                 speed: 2,
@@ -502,7 +512,7 @@ function Engine(element, options){
             return { world, player, camera, undertale }
         }
 
-        collides(world, rect, incrementX = 0, incrementY = 0){
+        collides(world, rect, incrementX = 0, incrementY = 0, naturalMovement = false){
             let result = [false, false]
 
             /*
@@ -516,21 +526,30 @@ function Engine(element, options){
 
             // Rectangle based collisions
             if(world.currentRoom.objects) for(let object of world.currentRoom.objects){
-                const colidesX = engine.AABB(rect, object, incrementX, 0);
-                const colidesY = engine.AABB(rect, object, 0, incrementY);
+                const collidesX = engine.AABB(rect, object, incrementX, 0);
+                const collidesY = engine.AABB(rect, object, 0, incrementY);
+                const collides = collidesX || collidesY
 
-                if(colidesX || colidesY){
-                    if(object.onMovement) object.onMovement(rect, colidesX, colidesY);
-                    if(object.onEnter) object.onEnter(rect, colidesX, colidesY);
-                    if(object.onLeave) object.onLeave(rect, colidesX, colidesY);
-
-                    if(object.solid) {
-                        if(colidesX) result[0] = true
-                        if(colidesY) result[1] = true
-
-                        if(colidesX && colidesY) return result;
+                if(collides){
+                    // Object move and enter events:
+                    if(naturalMovement){
+                        if(!object.collides && object.onEnter) object.onEnter(rect, incrementX, incrementY, collidesX, collidesY);
+                        if(object.onMovement) object.onMovement(rect, incrementX, incrementY, collidesX, collidesY);
                     }
+                    
+                    // Collision
+                    if(object.solid) {
+                        if(collidesX) result[0] = true
+                        if(collidesY) result[1] = true
+
+                        if(collidesX && collidesY) return result;
+                    }
+                } else if(naturalMovement) {
+                    // Object leave event:
+                    if(object.collides && object.onLeave) object.onLeave(rect, incrementX, incrementY, collidesX, collidesY);
                 }
+
+                object.collides = collides
             }
 
             // Pixel-Perfect collision mask
@@ -740,6 +759,75 @@ function Engine(element, options){
                     container.destroy({ children: true, texture: false })
                 }
             }
+        }
+
+        decodePixelCollisionMasks(encoded) {
+
+            /*
+                This is the function that decodes an encoded set of pre-computed collision masks for pixel-perfect collision detection.
+            */
+
+            const masks = {};
+            let index = 0;
+        
+            // Read number of masks (1 byte)
+            const numMasks = encoded[index];
+            index += 1;
+        
+            const maskHeaders = [];
+        
+            // Read each mask's header
+            for (let i = 0; i < numMasks; i++) {
+                // Read Mask ID (2 bytes)
+                const maskID = encoded[index] | (encoded[index + 1] << 8);
+                index += 2;
+        
+                // Read Mask Size (4 bytes)
+                const size = encoded[index] | (encoded[index + 1] << 8) | (encoded[index + 2] << 16) | (encoded[index + 3] << 24);
+                index += 4;
+        
+                // Store the mask header
+                maskHeaders.push({ id: maskID, size, startIndex: index });
+                index += size; // Skip mask data (we'll decode it after)
+            }
+        
+            // Decode each mask's data
+            for (const { id, size, startIndex } of maskHeaders) {
+                const maskData = encoded.slice(startIndex, startIndex + size);
+                masks[id] = _this.decodeCollisionMask(maskData);
+            }
+        
+            return masks;
+        }
+
+        decodeCollisionMask(encoded) {
+            const collisionMask = {};
+            let index = 0;
+        
+            while (index < encoded.length) {
+                // Decode Y-coordinate (2 bytes)
+                const yCoord = encoded[index] | (encoded[index + 1] << 8);
+                index += 2;
+        
+                // Decode number of ranges (1 byte)
+                const numRanges = encoded[index];
+                index += 1;
+        
+                // Decode the ranges
+                const ranges = [];
+                for (let i = 0; i < numRanges; i++) {
+                    const start = encoded[index] | (encoded[index + 1] << 8);
+                    index += 2;
+                    const end = encoded[index] | (encoded[index + 1] << 8);
+                    index += 2;
+                    ranges.push([start, end]);
+                }
+        
+                // Store in the collision mask object
+                collisionMask[yCoord] = ranges;
+            }
+        
+            return collisionMask;
         }
     }
 

@@ -52,7 +52,6 @@ LS.once("body-available", async function () {
 
             map_test: "/assets/maps/test/map.png",
             map_slope: "/assets/maps/slopetest/map.png",
-            map_snow: "/assets/maps/slopetest/nUJXURr.png",
         },
 
         screens: {},
@@ -95,7 +94,7 @@ LS.once("body-available", async function () {
 
     O(app.view).on("wheel", event => {
         if(DEBUG_MODE){
-            if(false && event.ctrlKey){
+            if(event.ctrlKey){
                 let rect = app.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
 
                 const worldPosBeforeZoom = {

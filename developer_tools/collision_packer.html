@@ -1,0 +1,107 @@
+<head>
+
+    @manifest {
+        title: "Pixel collision packer";
+        favicon: "/assets/soul.png";
+    }
+    
+    @resources {
+        js:
+            /engine/misc.js
+        ;
+
+        ls-js: tiny;
+    }
+
+</head>
+
+<body>
+    <main>
+        <h2>This tool helps you convert image collisions into an optimized mask format used by the engine.</h2>
+
+        Select the collision image: 
+        <input onchange="handleFileSelect(this)" type="file">
+
+        <br> <br>
+        
+        <div %result hidden>
+            Your mask was sucessfully converted.<br> <br>
+            <img height="300" %preview> <br><br>
+            <button onclick="download()">Download mask (as binary file)</button>
+            <button onclick="copy()">Copy mask (as JSON)</button> <br> <br>
+            <span %sizeComparsion></span>
+        </div>
+    </main>
+
+    <style>
+        #preview {
+            filter: brightness(0);
+        }
+    </style>
+
+    <script>
+        let result, binaryResult;
+
+        function copy(){
+            LS.Util.copy(JSON.stringify(result))
+        }
+
+        function downloadURL(data, fileName) {
+            const a = N('a', {
+                href: data,
+                download: fileName
+            })
+
+            document.body.appendChild(a)
+
+            a.style.display = 'none'
+
+            a.click()
+            a.remove()
+        }
+
+        function downloadBlob(data, fileName, mimeType) {
+            const blob = new Blob([data], {
+                type: mimeType
+            })
+
+            const url = URL.createObjectURL(blob)
+
+            downloadURL(url, fileName)
+
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+        }
+
+        function download(){
+            downloadBlob(Engine.misc.encodeCollisionMask(result), "result", "application/octet-stream")
+        }
+
+        function handleFileSelect(inputElement) {
+            O("#result").hide()
+            const file = inputElement.files[0];
+
+            if (!file) {
+                console.error("No file selected");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = async function (e) {
+                let mask = await Engine.misc.createCollisionMask(e.target.result)
+
+                O("#preview").src = e.target.result
+
+                result = mask
+                binaryResult = Engine.misc.encodeCollisionMask(result)
+
+                O("#result").show()
+                O("#sizeComparsion").innerHTML = `Image size: ${file.size / 1000}kB<br>JSON size: ${JSON.stringify(mask).length / 1000}kB<br>Binary size: <b>${binaryResult.length / 1000}kB</b>`
+            };
+
+            reader.readAsDataURL(file);
+
+            inputElement.value = '';
+        }
+    </script>
+</body>

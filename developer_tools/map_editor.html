@@ -1,0 +1,326 @@
+<head>
+
+    @manifest {
+        title: "Map editor";
+        favicon: "/assets/soul.png";
+
+        style: "elevated";
+        theme: "dark";
+        accent: "rusty-red";
+    }
+    
+    @resources {
+        js:
+            https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.2/pixi.min.js,
+            /engine/misc.js
+        ;
+
+        ls-js: tiny;
+        ls-css: base, ls-elevated;
+
+        fonts: "Ubuntu Mono";
+    }
+
+</head>
+
+<body>
+    <main>
+        <ls-box %toolbox>
+            <button onclick="O('#mapFilePicker').click()" style="width: 100%;">Load map</button> <br>
+            <button style="width: 100%;">Load objects</button> <br><br>
+            <span %info></span> <br><br>
+
+            Objects:
+
+            <div %objects></div>
+        </ls-box>
+
+        <div %viewPort></div>
+
+        <input type="file" %mapFilePicker hidden onchange="handleFileSelect(this)">
+    </main>
+
+    <style>
+        /* @font-face {
+            font-family: "DeterminationSans";
+            src: url(/assets/fonts/determination/sans.ttf);
+        } */
+
+        :root, html, body {
+            font-family: "Ubuntu Mono", monospace;
+            background: #111;
+            color: #fff;
+            position: fixed;
+            margin: 0;
+            padding: 0;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+            font-smooth: never;
+
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        img, canvas {
+            image-rendering: pixelated;
+        }
+
+        img {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+        }
+
+        #viewPort {
+            background-color: #000;
+            display: inline-block;
+            padding: 0;
+            margin: 0;
+        }
+
+        #toolbox {
+            position: fixed;
+            left: 10px;
+            top: 10px;
+            bottom: 10px;
+            width: 250px;
+        }
+
+        #info {
+            white-space: pre-wrap;
+            user-select: text;
+        }
+    </style>
+
+    <script>
+        let app, viewPort, assets, camera = new PIXI.Container(), rangeSelector = new PIXI.Graphics, previewPixel = new PIXI.Graphics, worldContainer, mapSprite, objects = [];
+
+        /*
+            This is the first file that runs and is responsible for initization of the engine and other game related objects + loading assets.
+            No game logic should be found here.
+        */
+
+        let selectorBox = {x: 0, y: 0, width: 0, height: 0}, mouseCoords = {x: 0, y: 0};
+
+        previewPixel.beginFill(0x4A90E2, 0.4);
+        previewPixel.drawRect(0, 0, 1, 1);
+        previewPixel.endFill();
+
+        function updateSelector(x, y, width, height) {
+            width =  Math.ceil(width)
+            height = Math.ceil(height)
+            x =      Math.floor(x)
+            y =      Math.floor(y)
+
+            selectorBox = {x, y, width, height}
+
+            rangeSelector.position = {x, y};
+
+            rangeSelector.clear();
+            rangeSelector.beginFill(0x17A2B8, 0.4);
+            if(width > 2 && height > 2) rangeSelector.lineStyle(1, 0x00CED1, 1, 0);
+            rangeSelector.drawRect(0, 0, width, height);
+            rangeSelector.endFill();
+
+            return selectorBox
+        }
+
+        function addObject(object){
+            objects.push(object)
+        }
+
+        LS.once("body-available", async function () {
+            viewPort = O("#viewPort");
+
+            // PIXI.settings.ROUND_PIXELS = true;
+            PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+            PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+            // PIXI.settings.MIPMAP_TEXTURES = PIXI.MIPMAP_MODES.OFF; // You dont even know how much time I wasted frustrated with this until I found this setting!!
+
+            app = new PIXI.Application({
+                width: 640,
+                height: 480,
+                // roundPixels: true,
+                // autoDensity: true,
+                // antialias: false,
+                resizeTo: window
+            });
+
+            assets = {
+                // soul: "/assets/soul.png",
+                // logo: "/assets/logo.png",
+
+                // frisk: "/assets/sprites/player/frisk.png",
+
+                map_test: "/assets/maps/test/map.png",
+                map_slope: "/assets/maps/slopetest/map.png",
+            }
+
+            for(let id in assets){
+                assets[id] = await PIXI.Assets.load(assets[id])
+            }
+
+            viewPort.add(app.view);
+
+            O(app.view).on("wheel", "mousemove", event => {
+                if(event.type === "wheel"){
+                    if(event.ctrlKey){
+                        let rect = app.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
+    
+                        const worldPosBeforeZoom = {
+                            x: (mouseX - camera.x) / camera.scale.x,
+                            y: (mouseY - camera.y) / camera.scale.y
+                        };
+
+                        let scale = Math.min(1500, Math.max(0.2, camera.scale.x - (event.deltaY * (camera.scale.x / 500))))
+    
+                        camera.scale = {x: scale, y: scale};
+    
+                        // Recalculate world position after zoom
+                        const worldPosAfterZoom = {
+                            x: (mouseX - camera.x) / camera.scale.x,
+                            y: (mouseY - camera.y) / camera.scale.y
+                        };
+    
+                        // Adjust the camera's position to anchor zoom to the mouse position
+                        camera.x += (worldPosAfterZoom.x - worldPosBeforeZoom.x) * camera.scale.x;
+                        camera.y += (worldPosAfterZoom.y - worldPosBeforeZoom.y) * camera.scale.y;
+                    } else {
+                        camera[event.shiftKey? "x": "y"] -= event.deltaY
+                    }
+                } else if (event.type === "mousemove") {
+                    mouseCoords = {
+                        x: Math.floor(transformPointX(event.clientX)),
+                        y: Math.floor(transformPointY(event.clientY)),
+                    }
+                }
+
+                event.preventDefault()
+            })
+
+            M.on("keypress", event => {
+                switch(event.key){
+                    case "c":
+                        LS.Util.copy(JSON.stringify(selectorBox))
+                        rangeSelector.visible = false
+                    break
+                    case "s":
+                        LS.Util.copy(JSON.stringify(selectorBox))
+                        rangeSelector.visible = false
+                    break
+                }
+            })
+
+            let infoElement = O("#info");
+
+            app.ticker.add(delta => {
+                previewPixel.position = mouseCoords;
+
+                infoElement.innerText = `Mouse X: ${mouseCoords.x} Y: ${mouseCoords.y}\nCamera X: ${Math.floor(camera.x)} Y: ${Math.floor(camera.y)}\nCamera cale: ${camera.scale.x.toFixed(2)}x\n\nSelection\nX: ${selectorBox.x} Y: ${selectorBox.y}\nW: ${selectorBox.width} H: ${selectorBox.height}`
+            })
+
+            let handle = LS.Util.touchHandle(app.view)
+
+            let initialX = 0, initialY = 0, initialCameraX = 0, initialCameraY = 0, button;
+            
+            handle.on("start", (event, cancel, x, y) => {
+                initialX = x;
+                initialY = y;
+                initialCameraX = camera.position.x;
+                initialCameraY = camera.position.y;
+
+                button = event.button
+
+                handle.cursor = button === 1? "grab": "auto"
+
+                previewPixel.visible = false
+            })
+
+            function transformPointX(point, initialCameraX){
+                const rect = app.view.getBoundingClientRect()
+                return (point - (initialCameraX || camera.position.x) - rect.x) / camera.scale.x
+            }
+
+            function transformPointY(point, initialCameraY){
+                const rect = app.view.getBoundingClientRect()
+                return (point - (initialCameraY || camera.position.y) - rect.y) / camera.scale.y
+            }
+
+            handle.on("move", (x, y, event, cancel) => {
+                if(button === 1){
+
+                    camera.position.x = initialCameraX - (initialX - x)
+                    camera.position.y = initialCameraY - (initialY - y)
+
+                } else if(button === 0){
+                    if(!rangeSelector.visible) rangeSelector.visible = true;
+
+                    const transformedInitialX = transformPointX(initialX, initialCameraX)
+                    const transformedInitialY = transformPointY(initialY, initialCameraY)
+                    const transformedX = transformPointX(x)
+                    const transformedY = transformPointY(y)
+
+                    let width = transformedInitialX - transformedX;
+                    let height = transformedInitialY - transformedY;
+
+                    if(event.shiftKey) {
+                        if(width > height){
+                            width = height
+                        } else height = width
+                    }
+
+                    updateSelector(width > 0? transformedInitialX - width: transformedInitialX, height > 0? transformedInitialY - height: transformedInitialY, Math.abs(width), Math.abs(height))
+                }
+            })
+
+            handle.on("end", (event) => {
+                previewPixel.visible = true
+            })
+
+            worldContainer = new PIXI.Container()
+            mapSprite = new PIXI.Sprite(assets.map_slope)
+
+            worldContainer.addChild(mapSprite)
+            camera.addChild(worldContainer)
+            camera.addChild(rangeSelector)
+            camera.addChild(previewPixel)
+
+            app.stage.addChild(camera)
+
+            camera.position = {
+                x: 300,
+                y: 50
+            }
+        })
+
+
+        // Very uneffective, I know
+        function handleFileSelect(inputElement) {
+            const file = inputElement.files[0];
+
+            if (!file) {
+                console.error("No file selected");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = async function (e) {
+                if(assets.imported) assets.imported.destroy()
+
+                assets.imported = await PIXI.Assets.load(e.target.result)
+                mapSprite.texture = assets.imported
+            }
+
+            reader.readAsDataURL(file);
+
+            inputElement.value = '';
+        }
+    </script>
+</body>
