@@ -15,23 +15,26 @@ function Engine(element, options){
 
             let upFired = true;
 
+            _this.keyReceivers = []
+
             M.on("keyup", "keydown", (event => {
-                
                 let isFirst = false;
                 if(event.type === "keyup") upFired = true; else if (upFired) {
                     isFirst = true
                     upFired = false
                 }
 
-                if(game.keyReceiver) game.keyReceiver({
-                    down: event.type === "keydown",
-                    isFirst,
-                    key: event.key,
-                    direction: game.settings.controls.directions.indexOf(event.key.toLowerCase()),
-                    main: game.settings.controls.main.includes(event.key.toLowerCase()),
-                    cancel: game.settings.controls.cancel.includes(event.key.toLowerCase()),
-                    domEvent: event
-                })
+                for(let receiver of _this.keyReceivers){
+                    if(typeof receiver === "function" && receiver.enabled) receiver({
+                        down: event.type === "keydown",
+                        isFirst,
+                        key: event.key,
+                        direction: game.settings.controls.directions.indexOf(event.key.toLowerCase()),
+                        main: game.settings.controls.main.includes(event.key.toLowerCase()),
+                        cancel: game.settings.controls.cancel.includes(event.key.toLowerCase()),
+                        domEvent: event
+                    })
+                }
             }))
 
             let scalingEnabled = !!options.scaling;
@@ -67,6 +70,22 @@ function Engine(element, options){
             app.ticker.add(delta => {
                 if(_this.tickers[_this.activeScreen]) for(let ticker of _this.tickers[_this.activeScreen]) if(ticker) ticker(delta);
             })
+        }
+
+        onKeypress(callback){
+            callback.enabled = true
+            _this.keyReceivers.push(callback)
+
+            return {
+                callback,
+
+                get enabled(){
+                    return callback.enabled
+                },
+                set enabled(value){
+                    callback.enabled = !!value
+                }
+            }
         }
 
         applyOptions(options){
@@ -207,6 +226,11 @@ function Engine(element, options){
                     _this.tickers[id].push(callback)
                 },
 
+                keyboardEvents(callback){
+                    callback.screen = id;
+                    return _this.onKeypress(callback)
+                },
+
                 removeTicker(callback){
                     let index = _this.tickers[id].indexOf(callback)
                     delete _this.tickers[id][index]
@@ -223,10 +247,15 @@ function Engine(element, options){
         async switchScreen(id) {
             if(game.screens[id].loadPromise) await game.screens[id].loadPromise;
 
+            if(game.screens[_this.activeScreen]) game.screens[_this.activeScreen].container.removeFromParent();
+
             app.stage.removeChildren();
-            game.keyReceiver = viewPort.onclick = game.screens[id].keyReceiver || null
+
+            if(_this.keyReceivers) for(let receiver of _this.keyReceivers) if(receiver.hasOwnProperty("screen")) receiver.enabled = receiver.screen === id;
 
             _this.activeScreen = id
+
+            viewPort.onclick = null;
 
             for(let listener of game.screens[id].events.activate) listener(game.screens[id])
             app.stage.addChild(game.screens[id].container);
@@ -240,7 +269,7 @@ function Engine(element, options){
             return game.screens[id]
         }
 
-        createWorld(options){
+        createWorld(options, screen){
             let screenCenterX = app.screen.width / 2, screenCenterY = app.screen.height / 2;
 
             let world = {
@@ -264,7 +293,7 @@ function Engine(element, options){
                     world.rooms[id].createObject = function (options) {
                         world.createRoomObject(world.rooms[id], options)
                     }
-                    
+
                     world.rooms[id].addObjects = function (objects) {
                         for(let object of objects){
                             world.rooms[id].createObject(object)
@@ -376,7 +405,7 @@ function Engine(element, options){
                         }
                     }
 
-                    room.objects.push(object)
+                    object.id = room.objects.push(object) - 1
                     return object
                 },
     
@@ -443,7 +472,7 @@ function Engine(element, options){
                                 player.frameIndex = (player.frameIndex + 1) % (player.direction < 2? 4: 2); // Loop through the 4 animation frames
                             }
                         } else player.frameIndex = 0;
-        
+
                         player.setFrame(player.directions[player.direction] + player.frameIndex);
         
                     } else {
@@ -451,6 +480,24 @@ function Engine(element, options){
                         // Idle frame
                         player.setFrame(player.directions[player.direction] + "0");
         
+                    }
+
+                    let target = world.currentRoom.objects[world.interactingObject]
+
+                    if(target){
+                        if(player.keyStates[4]){
+                            if(!target.pressed) {
+                                target.pressed = true
+                                if(target.onPress) target.onPress()
+                            }
+
+                            if(target.onPressingFrame) target.onPressingFrame(delta)
+                        } else {
+                            if(target.pressed) {
+                                target.pressed = false
+                                if(target.onRelease) target.onRelease()
+                            }
+                        }
                     }
                 }
             }
@@ -635,6 +682,12 @@ function Engine(element, options){
 
             }
 
+            if(screen) world.keyEvents = screen.keyboardEvents(event => {
+                if(event.main) player.keyStates[4] = event.down; else {
+                    player.keyStates[event.direction] = event.down
+                }
+            });
+
             return { world, player, camera, undertale }
         }
 
@@ -662,6 +715,8 @@ function Engine(element, options){
                         if(!object.collides && object.onEnter) object.onEnter(rect, incrementX, incrementY, collidesX, collidesY);
                         if(object.onMovement) object.onMovement(rect, incrementX, incrementY, collidesX, collidesY);
                     }
+
+                    world.interactingObject = object.id
                     
                     // Collision
                     if(object.solid) {
@@ -672,7 +727,10 @@ function Engine(element, options){
                     }
                 } else if(naturalMovement) {
                     // Object leave event:
-                    if(object.collides && object.onLeave) object.onLeave(rect, incrementX, incrementY, collidesX, collidesY);
+                    if(object.collides && object.onLeave) {
+                        object.onLeave(rect, incrementX, incrementY, collidesX, collidesY)
+                        if(world.interactingObject === object.id) world.interactingObject = null;
+                    }
                 }
 
                 object.collides = collides

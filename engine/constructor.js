@@ -52,6 +52,7 @@ LS.once("body-available", async function () {
 
             map_test: "/assets/maps/test/map.png",
             map_slope: "/assets/maps/slopetest/map.png",
+            map_asd: "/assets/maps/slopetest/asd.png",
         },
 
         screens: {},
@@ -94,33 +95,7 @@ LS.once("body-available", async function () {
 
     O(app.view).on("wheel", event => {
         if(DEBUG_MODE){
-            if(event.ctrlKey){
-                let rect = app.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
-
-                const worldPosBeforeZoom = {
-                    x: (mouseX - game.world.camera.x) / game.world.camera.scale,
-                    y: (mouseY - game.world.camera.y) / game.world.camera.scale
-                };
-
-                game.world.camera.scale = Math.max(0.4, game.world.camera.scale - (event.deltaY / 200));
-
-                // Recalculate world position after zoom
-                const worldPosAfterZoom = {
-                    x: (mouseX - game.world.camera.x) / game.world.camera.scale,
-                    y: (mouseY - game.world.camera.y) / game.world.camera.scale
-                };
-
-                // Adjust the camera's position to anchor zoom to the mouse position
-                game.world.camera.x += (worldPosAfterZoom.x - worldPosBeforeZoom.x) * game.world.camera.scale;
-                game.world.camera.y += (worldPosAfterZoom.y - worldPosBeforeZoom.y) * game.world.camera.scale;
-
-                // game.world.camera.scale = Math.max(0.4, game.world.camera.scale - (event.deltaY / 1000))
-                // game.world.camera.x 
-                // game.world.camera.y 
-            } else {
-                game.world.camera[event.shiftKey? "x": "y"] -= event.deltaY
-            }
-
+            game.world.camera[event.shiftKey? "x": "y"] -= event.deltaY
             event.preventDefault()
         }
     })
@@ -131,7 +106,7 @@ LS.once("body-available", async function () {
     start(loadTime)
 
     // Debug
-    // return engine.switchScreen("game")
+    return engine.switchScreen("game")
 
     // Start the splash screen
     setTimeout(() => {

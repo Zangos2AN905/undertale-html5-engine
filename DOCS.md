@@ -123,7 +123,7 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
     engine.createScreen("game", self => {
         
         // Create a game world
-        let { world, player, camera } = engine.createWorld()
+        let { world, player, camera } = engine.createWorld({}, self)
 
         // Add the world camera to your screen 
         self.add(camera)
@@ -147,12 +147,14 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
         })
 
 
-
         // A default ticker function to keep things simple. You can create your own ticker for more flexibility.
         self.addTicker(world.defaultTicker);
 
-        // Simplest setup to pass movement controls to the engine
-        self.keyReceiver = event => player.keyStates[event.direction] = event.down;
+
+        // You can manage the keyboard events passthrough
+        world.keyEvents.enabled = true;
+
+        // If you want a custom keyboard event handler, simply disable the default one and instead use player.keyStates (an array with 5 booleans: up, down, left, right, main (main = enter))
 
 
         self.onActivated(() => {
@@ -192,6 +194,18 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
 
         onEnter(rect, incrementX, incrementY, colidesX, colidesY){
             // Called when the player leaves the object
+        },
+
+        onPress(){
+            // Main key pressed while colliding
+        },
+
+        onPressingFrame(){
+            // Called on every frame when the player holds the main key
+        },
+
+        onRelease(){
+            // Player released the key
         }
 
         // In events, rect is the rect of the player *before* moving. "Increment x/y" tells you the movement the player is about to make and "colides x/y" tell you from which side it colides with your object.
@@ -227,36 +241,39 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
     -
     The engine offers three main collision mechanisms out of the box.<br>
     You can combine them all at once depending on your needs. <br>
+    <br>
+    In general: You should use pixel collisions for collisions that are static and will never change, and AABB collisions for when you want full control over the collision or need different behavior for multiple collisions.
 
 
-    ### 1. Pixel-perfect collisions
-    A highly optimized, fast and accurate collision checking.<br>
-    It works by pre-computing rows of a collision mask (image of the same resolution as the map, where non-transparent pixels are solid) and creating arrays of where a collision starts and ends.<br><br>
+    ### 1. Pixel collisions
+    Fast and fairly accurate collision checking.<br>
+    It works by pre-computing rows of a collision mask (an image where non-transparent pixels are solid) and creating arrays of where a column starts and ends.<br><br>
     Advantages:
-    - Very fast, simple to create
+    - Very fast
     - Pixel accuracy (can be any shape)
-    - Spatial filtering (filters which rows or columns to proccess based on position)
+    - Easy to create
 
     Disadvantages:
-    - Static (cannot be dynamically changed, and there can only be one)
-    - Requires pre-computation, more difficult to manage
-    - Very basic
+    - Static (cannot be updated or changed)
+    - Requires pre-computation (more difficult to manage)
+    - Can only have one at a time
 
     How to pre-compute:<br>
     Use the "createCollisionMask" function from /engine/misc.js, passing it the URL of your collision mask as an image.<br>
     Warning: precomputing is a very expensive task, you should always ship an already computed mask and pass it directly, don't do it on each run.
     
     ### 2. AABB (Rectangle) collisions
-    Collisions that compare an AABB (box/object/rectangle) to the AABB of the player's collision. <br>
-    This method may be faster or slower than pixel collisions, depending on the amount of objects you have - currently, the engine has to iterate and check every single object.<br><br>
+    Collisions that compare a rectangle (object) to the rectangle of the player's collision.<br>
+    Performance depends on the amount of objects you have - currently, the engine has to go over and check every single object on every frame.<br><br>
     Advantages:
-    - Fully dynamic, can be modified at runtime
+    - Fully dynamic, can be updated at any time
     - Allows events (enter, move, leave)
-    - Custom behavior supported
+    - Custom behavior supported (triggers, etc.)
+    - Can have many at once
 
     Disadvantages:
     - Shape can only be a rectangle
-    - Requires a special program to create
+    - More difficult to create
     - Slower if you have lots of objects
 
     ### 3. Bounding box

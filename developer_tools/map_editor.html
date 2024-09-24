@@ -12,11 +12,19 @@
     @resources {
         js:
             https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.2/pixi.min.js,
-            /engine/misc.js
+            /engine/misc.js,
+
+            /developer_tools/assets/js/window-manager.js
         ;
 
-        ls-js: tiny;
-        ls-css: base, ls-elevated;
+        css:
+            /developer_tools/assets/css/main.css
+        ;
+
+        bootstrap-icons;
+
+        ls-js: tiny, resize, tooltips, toast, nav;
+        ls-css: base, ls-elevated, resize, tooltips, toast, navbar;
 
         fonts: "Ubuntu Mono";
     }
@@ -25,27 +33,70 @@
 
 <body>
     <main>
-        <ls-box %toolbox>
-            <button onclick="O('#mapFilePicker').click()" style="width: 100%;">Load map</button> <br>
-            <button style="width: 100%;">Load objects</button> <br><br>
-            <span %info></span> <br><br>
+        <div %navbar>
+            <ls-nav>
+                <ls-dropdown>
+                    File
+                    <ls-menu>
+                        <ls-option ls-hint="Open a map file" onclick="O('#mapFilePicker').click()">Load map</ls-option>
+                    </ls-menu>
+                </ls-dropdown>
 
-            Objects:
+                <ls-dropdown>
+                    Tools
+                    <ls-menu>
+                        <ls-option onclick="app.windows.collisionPacker.addToWorkspace()" ls-hint="This tool converts a bitmap collision into a collision mask.">Pixel collision packer</ls-option>
+                    </ls-menu>
+                </ls-dropdown>
 
-            <div %objects></div>
-        </ls-box>
+                <!-- <ls-dropdown>
+                    Help
+                    <ls-menu>
+                        <ls-option onclick="app.ui.action.about()" ls-hint="About the program">About</ls-option>
+                    </ls-menu>
+                </ls-dropdown> -->
+            </ls-nav>
+        </div>
 
-        <div %viewPort></div>
+        <div %workspace>
+            <ls-box %leftToolbox>
+                <button onclick="O('#mapFilePicker').click()" style="width: 100%;">Load map</button> <br>
+                <button style="width: 100%;">Load objects</button> <br><br>
+                <span %info></span> <br><br>
+    
+                Objects:
+    
+                <div %objects></div>
+            </ls-box>
+    
+            <div %viewPort></div>
+    
+            <input type="file" %mapFilePicker hidden onchange="handleFileSelect(this)">
+        </div>
 
-        <input type="file" %mapFilePicker hidden onchange="handleFileSelect(this)">
+        <div %hint hidden></div>
     </main>
 
-    <style>
-        /* @font-face {
-            font-family: "DeterminationSans";
-            src: url(/assets/fonts/determination/sans.ttf);
-        } */
+    <div hidden %windowContents>
+        <div %collisionPacker>
+            <h2>This tool helps you convert image collisions into an optimized mask format used by the engine.</h2> <br>
 
+            Select the collision image: 
+            <input onchange="app.collisionPacker.handleFileSelect(this)" type="file">
+
+            <br><br>
+            
+            <div %result hidden>
+                Your mask was sucessfully converted.<br> <br>
+                <img height="125" %preview> <br><br>
+                <button onclick="app.collisionPacker.download()">Download mask (as binary file)</button>
+                <button onclick="app.collisionPacker.copy()">Copy mask (as JSON)</button> <br> <br>
+                <span %sizeComparsion></span>
+            </div>
+        </div>
+    </div>
+
+    <style>
         :root, html, body {
             font-family: "Ubuntu Mono", monospace;
             background: #111;
@@ -77,6 +128,20 @@
             user-drag: none;
         }
 
+        main {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        #workspace {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            flex: 1;
+        }
+
         #viewPort {
             background-color: #000;
             display: inline-block;
@@ -84,17 +149,42 @@
             margin: 0;
         }
 
-        #toolbox {
-            position: fixed;
-            left: 10px;
-            top: 10px;
-            bottom: 10px;
+        #leftToolbox {
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            bottom: 15px;
             width: 250px;
+            margin: 0;
         }
 
         #info {
             white-space: pre-wrap;
             user-select: text;
+        }
+
+        #hint {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            padding: 4px 8px;
+            background: var(--elevate);
+        }
+
+        #ls-top-layer ls-menu hr {
+            --hr-spacing: 4px;
+        }
+
+        #collisionPacker {
+            padding: 8px 12px;
+        }
+
+        #collisionPacker #preview {
+            filter: brightness(0);
+        }
+
+        #collisionPacker h2 {
+            margin: 0;
         }
     </style>
 
@@ -138,19 +228,101 @@
         LS.once("body-available", async function () {
             viewPort = O("#viewPort");
 
-            // PIXI.settings.ROUND_PIXELS = true;
             PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
             PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-            // PIXI.settings.MIPMAP_TEXTURES = PIXI.MIPMAP_MODES.OFF; // You dont even know how much time I wasted frustrated with this until I found this setting!!
 
-            app = new PIXI.Application({
-                width: 640,
-                height: 480,
-                // roundPixels: true,
-                // autoDensity: true,
-                // antialias: false,
-                resizeTo: window
-            });
+            LS.Tooltips.on("set", (value)=>{
+                O("#hint").show()
+                O("#hint").set(value)
+            })
+
+            LS.Tooltips.on("leave", (value)=>{
+                O("#hint").hide()
+            })
+
+            windowManager.target = O("#workspace");
+
+            const collisionPackerContainer = O("#windowContents #collisionPacker");
+
+            let result, binaryResult;
+
+            function downloadURL(data, fileName) {
+                const a = N('a', {
+                    href: data,
+                    download: fileName,
+                    style: "display: none"
+                })
+
+                document.body.appendChild(a)
+
+                a.click()
+                a.remove()
+            }
+
+            app = {
+                pixi: new PIXI.Application({
+                    width: 640,
+                    height: 480,
+                    resizeTo: O("#workspace")
+                }),
+
+                contextMenu: LS.Nav("contextmenu", O("#navbar ls-nav")),
+
+                windows: {
+                    collisionPacker: windowManager.createWindow({
+                        x: 285, y: 15,
+                        width: 640,
+                        height: 420,
+                        title: "Collision packer"
+                    }, collisionPackerContainer)
+                },
+
+                collisionPacker: {
+                    copy(){
+                        LS.Util.copy(JSON.stringify(result))
+                    },
+
+                    download(){
+                        const blob = new Blob([Engine.misc.encodeCollisionMask(result)], {
+                            type: "application/octet-stream"
+                        })
+
+                        const url = URL.createObjectURL(blob)
+
+                        downloadURL(url, "mask")
+
+                        setTimeout(() => URL.revokeObjectURL(url), 1000)
+                    },
+
+                    handleFileSelect(inputElement) {
+                        collisionPackerContainer.get("#result").hide()
+                        const file = inputElement.files[0];
+
+                        if (!file) {
+                            console.error("No file selected");
+                            return;
+                        }
+
+                        const reader = new FileReader();
+
+                        reader.onload = async function (e) {
+                            let mask = await Engine.misc.createCollisionMask(e.target.result)
+
+                            collisionPackerContainer.get("#preview").src = e.target.result
+
+                            result = mask
+                            binaryResult = Engine.misc.encodeCollisionMask(result)
+
+                            collisionPackerContainer.get("#result").show()
+                            collisionPackerContainer.get("#sizeComparsion").innerHTML = `Image size: ${file.size / 1000}kB<br>JSON size: ${JSON.stringify(mask).length / 1000}kB<br>Binary size: <b>${binaryResult.length / 1000}kB</b>`
+                        };
+
+                        reader.readAsDataURL(file);
+
+                        inputElement.value = '';
+                    }
+                }
+            }
 
             assets = {
                 // soul: "/assets/soul.png",
@@ -166,12 +338,12 @@
                 assets[id] = await PIXI.Assets.load(assets[id])
             }
 
-            viewPort.add(app.view);
+            viewPort.add(app.pixi.view);
 
-            O(app.view).on("wheel", "mousemove", event => {
+            O(app.pixi.view).on("wheel", "mousemove", event => {
                 if(event.type === "wheel"){
                     if(event.ctrlKey){
-                        let rect = app.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
+                        let rect = app.pixi.view.getBoundingClientRect(), mouseX = event.clientX - rect.x, mouseY = event.clientY - rect.y;
     
                         const worldPosBeforeZoom = {
                             x: (mouseX - camera.x) / camera.scale.x,
@@ -219,13 +391,13 @@
 
             let infoElement = O("#info");
 
-            app.ticker.add(delta => {
+            app.pixi.ticker.add(delta => {
                 previewPixel.position = mouseCoords;
 
                 infoElement.innerText = `Mouse X: ${mouseCoords.x} Y: ${mouseCoords.y}\nCamera X: ${Math.floor(camera.x)} Y: ${Math.floor(camera.y)}\nCamera scale: ${camera.scale.x.toFixed(2)}x\n\nSelection\nX: ${selectorBox.x} Y: ${selectorBox.y}\nW: ${selectorBox.width} H: ${selectorBox.height}`
             })
 
-            let handle = LS.Util.touchHandle(app.view)
+            let handle = LS.Util.touchHandle(app.pixi.view)
 
             let initialX = 0, initialY = 0, initialCameraX = 0, initialCameraY = 0, button;
             
@@ -243,12 +415,12 @@
             })
 
             function transformPointX(point, initialCameraX){
-                const rect = app.view.getBoundingClientRect()
+                const rect = app.pixi.view.getBoundingClientRect()
                 return (point - (initialCameraX || camera.position.x) - rect.x) / camera.scale.x
             }
 
             function transformPointY(point, initialCameraY){
-                const rect = app.view.getBoundingClientRect()
+                const rect = app.pixi.view.getBoundingClientRect()
                 return (point - (initialCameraY || camera.position.y) - rect.y) / camera.scale.y
             }
 
@@ -291,7 +463,7 @@
             camera.addChild(rangeSelector)
             camera.addChild(previewPixel)
 
-            app.stage.addChild(camera)
+            app.pixi.stage.addChild(camera)
 
             camera.position = {
                 x: 300,
