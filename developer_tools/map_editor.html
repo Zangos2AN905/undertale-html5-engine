@@ -222,7 +222,7 @@
             app.ticker.add(delta => {
                 previewPixel.position = mouseCoords;
 
-                infoElement.innerText = `Mouse X: ${mouseCoords.x} Y: ${mouseCoords.y}\nCamera X: ${Math.floor(camera.x)} Y: ${Math.floor(camera.y)}\nCamera cale: ${camera.scale.x.toFixed(2)}x\n\nSelection\nX: ${selectorBox.x} Y: ${selectorBox.y}\nW: ${selectorBox.width} H: ${selectorBox.height}`
+                infoElement.innerText = `Mouse X: ${mouseCoords.x} Y: ${mouseCoords.y}\nCamera X: ${Math.floor(camera.x)} Y: ${Math.floor(camera.y)}\nCamera scale: ${camera.scale.x.toFixed(2)}x\n\nSelection\nX: ${selectorBox.x} Y: ${selectorBox.y}\nW: ${selectorBox.width} H: ${selectorBox.height}`
             })
 
             let handle = LS.Util.touchHandle(app.view)

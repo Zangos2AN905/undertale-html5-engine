@@ -129,7 +129,7 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
         self.add(camera)
 
         // Create a room
-        world.createRoom("test", {
+        let myRoom = world.createRoom("test", {
             // Base texture for your map
             baseTexture: game.assets.map_test,
 
@@ -173,7 +173,9 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
     {
         solid: true, // If false, the player can walk through the object
 
-        slope: false, // Makes the object behave like a slope
+        slope: false, // Makes the object behave like a slope (Overwrites onMovement!)
+        angle: -45, // Either 45 or -45 [slope only]
+        side: "bottom", // Either top or bottom [slope only]
 
         x: 0,
         y: 0,
@@ -192,24 +194,33 @@ The engine uses a highly-optimized WebGL renderer for its graphics, allowing you
             // Called when the player leaves the object
         }
 
-        // For events, "rect" is the rect of the player *before* moving. Increment x and y tell you the direction in pixels the player is about to make and colides x/y tell you which direction the player is going from (both will be true if the player is inside).
+        // In events, rect is the rect of the player *before* moving. "Increment x/y" tells you the movement the player is about to make and "colides x/y" tell you from which side it colides with your object.
+
+
+        // Note that objects have no visual or sprite attached by default, they only exist as an independent rectangle.
+
+        // If you set this to true, the object will get a rendered sprite. This can only be set when creating the object - changin this after will have no effect.
+        createVisual: false,
+
+        baseTexture: texture, // Optional (texture of the sprite)
+
+        followDimension: false // Copy the object width and height to the sprite
     }
     ```
-    Note that objects have no visual or sprite attached by default, they only exist as an independent rectangle.
     
-    ### To attach a visual sprite to the object
-    This is impossible with regular objects, but can be achieved with:
+    ### To attach an object/objects to a room
     ```js
-    let myObject = engine.createVisualObject(room, {
-        // ... same options as a regular object ...
+    // Adding multiple objects at once
+    room.addObjects([
+        // objects...
+    ])
 
-        baseTexture: texture, // Optional
-
-        followDimension: false // Copy the object width and height to the visual
+    // Create a single object
+    let myObject = room.createObject({
+        // options...
     })
 
-    // To add the object, simply push it
-    room.objects.push(myObject)
+    // If your object is has a visual, you can access the sprite with myObject.sprite
     ```
 
 - Collisions

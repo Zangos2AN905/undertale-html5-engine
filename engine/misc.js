@@ -120,5 +120,50 @@ Engine.misc = {
     
         // Convert buffer to a Uint8Array for compact binary storage
         return new Uint8Array(buffer);
+    },
+
+
+
+
+
+    // Needs work, after that will be put into the Engine class
+
+    decodePixelCollisionMasks(encoded) {
+
+        /*
+            This is the function that decodes an encoded set of pre-computed collision masks for pixel-perfect collision detection.
+        */
+
+        const masks = {};
+        let index = 0;
+    
+        // Read number of masks (1 byte)
+        const numMasks = encoded[index];
+        index += 1;
+    
+        const maskHeaders = [];
+    
+        // Read each mask's header
+        for (let i = 0; i < numMasks; i++) {
+            // Read Mask ID (2 bytes)
+            const maskID = encoded[index] | (encoded[index + 1] << 8);
+            index += 2;
+    
+            // Read Mask Size (4 bytes)
+            const size = encoded[index] | (encoded[index + 1] << 8) | (encoded[index + 2] << 16) | (encoded[index + 3] << 24);
+            index += 4;
+    
+            // Store the mask header
+            maskHeaders.push({ id: maskID, size, startIndex: index });
+            index += size; // Skip mask data (we'll decode it after)
+        }
+    
+        // Decode each mask's data
+        for (const { id, size, startIndex } of maskHeaders) {
+            const maskData = encoded.slice(startIndex, startIndex + size);
+            masks[id] = _this.decodeCollisionMask(maskData);
+        }
+    
+        return masks;
     }
 }

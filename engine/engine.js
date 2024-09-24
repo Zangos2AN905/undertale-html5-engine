@@ -249,9 +249,135 @@ function Engine(element, options){
                 mapSprite: new PIXI.Sprite(),
     
                 rooms: {},
+
+                createRooms(rooms){
+                    for(let id in rooms){
+                        world.createRoom(id, rooms[id])
+                    }
+                },
     
                 createRoom(id, options){
                     world.rooms[id] = options
+
+                    if(!world.rooms[id].objects) world.rooms[id].objects = [];
+                    
+                    world.rooms[id].createObject = function (options) {
+                        world.createRoomObject(world.rooms[id], options)
+                    }
+                    
+                    world.rooms[id].addObjects = function (objects) {
+                        for(let object of objects){
+                            world.rooms[id].createObject(object)
+                        }
+                    }
+
+                    if(world.rooms[id].objects){
+                        let objects = world.rooms[id].objects;
+                        world.rooms[id].objects = []
+                        world.rooms[id].addObjects(objects)
+                    }
+
+                    return world.rooms[id]
+                },
+
+                createRoomObject(room, object){
+
+                    if(object.createVisual){
+                        object.sprite = new PIXI.Sprite(object.baseTexture)
+
+                        let x = object.x || 0, y = object.y, width = object.width || 0, height = object.height;
+
+                        Object.defineProperties(object, {
+                            get x(){
+                                return x
+                            },
+
+                            set x(value){
+                                x = value
+                                object.sprite.position.x = value
+                            },
+
+                            get y(){
+                                return y
+                            },
+
+                            set y(value){
+                                y = value
+                                object.sprite.position.y = value
+                            },
+
+                            get width(){
+                                return width
+                            },
+
+                            set width(value){
+                                width = value
+                                if(object.followDimension) object.sprite.width = value
+                            },
+
+                            get height(){
+                                return height
+                            },
+
+                            set height(value){
+                                height = value
+                                if(object.followDimension) object.sprite.height = value
+                            }
+                        })
+                    }
+
+                    if(object.slope){
+                        object.onMovement = (rect, incrementX, incrementY) => {
+                            if(object.angle === -45) {
+                                let slopeY = object.y + (rect.x + incrementX - object.x);
+        
+                                if(object.side === "top"){
+                                    if (incrementY > 0 && (rect.y + incrementY) > slopeY) {
+                                        const overlap = rect.y + incrementY - slopeY;
+                                        player.moveBy(player.speed, incrementY - overlap);
+                                    }
+            
+                                    else if (incrementX < 0 && rect.y > slopeY) {
+                                        player.moveBy(0, slopeY - rect.y);
+                                    }
+                                } else {
+                                    if (incrementY < 0 && (rect.y + incrementY) < slopeY) {
+                                        const overlap = rect.y + incrementY - slopeY;
+                                        player.moveBy(-player.speed, incrementY - overlap);
+                                    }
+            
+                                    else if (incrementX > 0 && rect.y < slopeY) {
+                                        player.moveBy(0, slopeY - rect.y);
+                                    }
+                                }
+                            } else if (object.angle === 45) {
+                                let slopeY = object.y + (object.width - (rect.x + incrementX - object.x));
+        
+                                if (object.side === "top") {
+                                    if (incrementY > 0 && (rect.y + incrementY) > slopeY) {
+                                        const overlap = rect.y + incrementY - slopeY;
+                                        player.moveBy(-player.speed, incrementY - overlap);
+                                    }
+        
+                                    else if (incrementX > 0 && rect.y > slopeY) {
+                                        player.moveBy(0, slopeY - rect.y);
+                                    }
+                                } else {
+                                    if (incrementY < 0 && (rect.y + incrementY) < slopeY) {
+                                        const overlap = rect.y + incrementY - slopeY;
+                                        player.moveBy(player.speed, incrementY - overlap);
+                                    }
+        
+                                    else if (incrementX < 0 && rect.y < slopeY) {
+                                        player.moveBy(0, slopeY - rect.y);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    room.objects.push(object)
+                    return object
                 },
     
                 _room: 0,
@@ -761,59 +887,17 @@ function Engine(element, options){
             }
         }
 
-        decodePixelCollisionMasks(encoded) {
-
-            /*
-                This is the function that decodes an encoded set of pre-computed collision masks for pixel-perfect collision detection.
-            */
-
-            const masks = {};
-            let index = 0;
-        
-            // Read number of masks (1 byte)
-            const numMasks = encoded[index];
-            index += 1;
-        
-            const maskHeaders = [];
-        
-            // Read each mask's header
-            for (let i = 0; i < numMasks; i++) {
-                // Read Mask ID (2 bytes)
-                const maskID = encoded[index] | (encoded[index + 1] << 8);
-                index += 2;
-        
-                // Read Mask Size (4 bytes)
-                const size = encoded[index] | (encoded[index + 1] << 8) | (encoded[index + 2] << 16) | (encoded[index + 3] << 24);
-                index += 4;
-        
-                // Store the mask header
-                maskHeaders.push({ id: maskID, size, startIndex: index });
-                index += size; // Skip mask data (we'll decode it after)
-            }
-        
-            // Decode each mask's data
-            for (const { id, size, startIndex } of maskHeaders) {
-                const maskData = encoded.slice(startIndex, startIndex + size);
-                masks[id] = _this.decodeCollisionMask(maskData);
-            }
-        
-            return masks;
-        }
-
         decodeCollisionMask(encoded) {
             const collisionMask = {};
             let index = 0;
-        
+
             while (index < encoded.length) {
-                // Decode Y-coordinate (2 bytes)
                 const yCoord = encoded[index] | (encoded[index + 1] << 8);
                 index += 2;
-        
-                // Decode number of ranges (1 byte)
+
                 const numRanges = encoded[index];
                 index += 1;
-        
-                // Decode the ranges
+
                 const ranges = [];
                 for (let i = 0; i < numRanges; i++) {
                     const start = encoded[index] | (encoded[index + 1] << 8);
@@ -822,12 +906,33 @@ function Engine(element, options){
                     index += 2;
                     ranges.push([start, end]);
                 }
-        
-                // Store in the collision mask object
+
                 collisionMask[yCoord] = ranges;
             }
         
             return collisionMask;
+        }
+    }
+
+    _this.animation = {
+        fadeIn(container, duration = 1000, onComplete = null) {
+            container.alpha = 0;
+            let elapsed = 0;
+        
+            const ticker = new PIXI.Ticker();
+            ticker.add((delta) => {
+                elapsed += delta * PIXI.Ticker.shared.deltaMS;
+                container.alpha = Math.min(elapsed / duration, 1);
+        
+                if (elapsed >= duration) {
+                    container.alpha = 1;
+                    ticker.stop();
+                    ticker.destroy();
+                    if (onComplete) onComplete();
+                }
+            });
+
+            ticker.start();
         }
     }
 

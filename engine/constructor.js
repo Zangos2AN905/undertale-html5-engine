@@ -33,7 +33,7 @@ LS.once("body-available", async function () {
     engine.onAppAvailable()
 
 
-    let DEBUG_MODE = true;
+    let DEBUG_MODE = false;
 
     game = {
         engine,
@@ -131,7 +131,7 @@ LS.once("body-available", async function () {
     start(loadTime)
 
     // Debug
-    return engine.switchScreen("game")
+    // return engine.switchScreen("game")
 
     // Start the splash screen
     setTimeout(() => {
