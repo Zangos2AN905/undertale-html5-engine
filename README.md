@@ -34,7 +34,7 @@ The engine uses PIXI.js v7 as the renderer. (Not v8 at this moment since it is a
 ### Map editor
 This is still too early in development, but we are working on a full blown map editor to make it easy to create maps!<br>
 Who knows, maybe one day it will become an entire SDK.<br>
-![Screenshot from 2024-09-24 00-52-35](https://github.com/user-attachments/assets/d447dc0e-c3bd-4324-937c-bef22999730c)
+![Screenshot from 2024-09-25 14-00-25](https://github.com/user-attachments/assets/1878e17c-54c5-4329-9322-45e3442fb4f0)
 <!--
 ### Build instructions
 - **With Akeno:** Simply clone the repo, add the directory to your Akeno app list and you are done, you can run the game from the local server.<br>
