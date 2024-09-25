@@ -21,7 +21,7 @@ I think that for a web-based Undertale engine, this does pretty good! Performanc
 The entire engine is under 500kB, without compression.<br>
 This makes it a very light-weight solution. It is more than 5x smaller than my previous engine used to make FanTale, while having an insane performance and quality boost.<br>
 <!--Thanks to this, it is simple to run this game from the web or on low-power devices like mobile phones, while maintaining a stable framerate.<br>
-The engine uses PIXI.js v7 as the renderer. (Not v8 at this moment since it is a bit more complicated to set up correctly and uses esm). PIXI is the fastest 2D web rendering engine that exists - [see for yourself](https://goodboydigital.github.io/pixi-bunnymark/dist/?version=v8&count=50000&renderer=webgpu).-->
+The engine uses PIXI.js v7 as the renderer. (Not v8 at this moment since it is a bit more complicated to set up correctly and uses esm). PIXI is the fastest 2D web rendering engine that exists - link -->
 
 
 <br>
