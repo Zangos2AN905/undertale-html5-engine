@@ -4,7 +4,7 @@ A robust Undertale fangame engine, creted entirely from scratch, pure code, no W
 Uses WebGL for rendering, and thus is also really fast and flexible.<br><br>
 So far its pretty early in development, but it already has a bunch to offer.<br>
 The engine features a fast and feature-rich text renderer that can handle basically all of your needs, including custom individual character behavior.<br>
-On top of that, it features all the standard features like scenes, rooms, fast collisions (pixel-perfect and rectangle modes), universal event handling, etc.<br>
+On top of that, it features all the standard features like scenes, rooms, fast collisions (pixel-perfect and rectangle modes), universal event handling, slopes and game objects, triggers, battle components etc.<br>
 It makes creating Undertale fangames a lot easier.
 <br><br>
 Check out /game/sample.js to see sample game logic and /engine/engine.js for the engine.
