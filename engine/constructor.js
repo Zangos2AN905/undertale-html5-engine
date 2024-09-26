@@ -6,38 +6,22 @@ let app, engine, viewPort, game;
 */
 
 LS.once("body-available", async function () {
+
     viewPort = O("#viewPort");
 
     engine = new Engine(viewPort, {
         width: 640, height: 480,
         scale: true
     });
-    
-
-    PIXI.settings.ROUND_PIXELS = true;
-    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-    PIXI.settings.MIPMAP_TEXTURES = PIXI.MIPMAP_MODES.OFF; // You dont even know how much time I wasted frustrated with this until I found this setting!!
 
 
-    app = new PIXI.Application({
-        width: engine.width,
-        height: engine.height,
-        roundPixels: true,
-        autoDensity: true,
-        resolution: 1,
-        // forceCanvas: true,
-        antialias: false,
-    });
-
-    engine.onAppAvailable()
+    app = await engine.initApp();
 
 
     let DEBUG_MODE = false;
 
     game = {
         engine,
-        renderer: app,
 
         assets: {
             DeterminationBitmap: "/assets/fonts/determination/font.png",
@@ -81,7 +65,7 @@ LS.once("body-available", async function () {
     game.debug = DEBUG_MODE;
 
     for(let id in game.assets){
-        game.assets[id] = await PIXI.Assets.load(game.assets[id])
+        game.assets[id] = await PIXI.Assets.load({src: game.assets[id]})
     }
 
     game.fonts = {

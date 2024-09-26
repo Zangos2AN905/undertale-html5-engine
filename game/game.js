@@ -161,7 +161,7 @@ async function start(loadTime){
 
         let disabled = false, starting = false;
 
-        self.addTicker((delta) => {
+        self.addTicker(delta => {
             if(starting) {
                 self.container.alpha -= (delta + 0.1) / 140
                 menuUI.container.alpha -= (delta + 0.1) / 80
@@ -177,8 +177,6 @@ async function start(loadTime){
                     engine.switchScreen("game")
                 }
             }
-
-            
         });
 
         // Receive key events
@@ -339,14 +337,14 @@ async function start(loadTime){
 
                 {"x":164,"y":224,"width":78,"height":21,
                 onPressingFrame(delta){
-                    player.container.transform.skew.x += .01 * delta
-                    player.container.transform.skew.y += .01 * delta
+                    player.container.skew.x += .01 * delta
+                    player.container.skew.y += .01 * delta
                     player.container.scale.y = player.container.scale.x += .01 * delta
                     world.container.alpha -= .005 * delta
                 },
                 onRelease(){
                     player.container.scale.y = player.container.scale.x = 1
-                    player.container.transform.skew.x = player.container.transform.skew.y = 0
+                    player.container.skew.x = player.container.skew.y = 0
                     world.container.alpha = 1
                 }
             
