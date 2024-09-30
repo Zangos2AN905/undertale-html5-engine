@@ -1,8 +1,8 @@
 function Engine(element, options){
 
-    let _this;
+    let _this, app;
 
-    new class {
+    new class QuickEngine {
 
         constructor(){
             _this = this;
@@ -10,15 +10,23 @@ function Engine(element, options){
             _this.element = element;
 
             _this.options = LS.Util.defaults({
-                scaling: true
+                scaling: false
             }, options)
 
             let upFired = true;
 
             _this.keyReceivers = []
 
+            _this.tickers = {}
+
+            _this.v8 = PIXI.VERSION[0] === "8"
+
+            
+            // Following code is mid
+
             M.on("keyup", "keydown", (event => {
-                let isFirst = false;
+                let isFirst = false
+
                 if(event.type === "keyup") upFired = true; else if (upFired) {
                     isFirst = true
                     upFired = false
@@ -26,6 +34,7 @@ function Engine(element, options){
 
                 for(let receiver of _this.keyReceivers){
                     if(typeof receiver === "function" && receiver.enabled) receiver({
+
                         down: event.type === "keydown",
                         isFirst,
                         key: event.key,
@@ -33,6 +42,7 @@ function Engine(element, options){
                         main: game.settings.controls.main.includes(event.key.toLowerCase()),
                         cancel: game.settings.controls.cancel.includes(event.key.toLowerCase()),
                         domEvent: event
+
                     })
                 }
             }))
@@ -43,6 +53,7 @@ function Engine(element, options){
                 get(){
                     return scalingEnabled
                 },
+
                 set(value){
                     scalingEnabled = !!value
 
@@ -58,18 +69,42 @@ function Engine(element, options){
 
             _this.scaling = scalingEnabled
 
-            _this.applyOptions(options)
             _this.setResolution()
 
-            M.on("resize", this.fixResolution);
-
-            _this.tickers = {}
+            M.on("resize", this.fixResolution)
         }
 
-        onAppAvailable(){
-            app.ticker.add(delta => {
-                if(_this.tickers[_this.activeScreen]) for(let ticker of _this.tickers[_this.activeScreen]) if(ticker) ticker(delta);
+        async initApp(options){
+
+            options = options || {
+                width: _this.options.width,
+                height: _this.options.height
+            }
+
+            if(_this.v8){
+                // v8
+                PIXI.AbstractRenderer.defaultOptions.roundPixels = true;
+                PIXI.TextureStyle.defaultOptions.scaleMode = "nearest"
+                PIXI.TextureSource.defaultOptions.mipLevelCount = 0
+                PIXI.TextureSource.defaultOptions.antialias = false
+            } else {
+                // v7 and below
+                PIXI.settings.ROUND_PIXELS = true;
+                PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+                PIXI.settings.MIPMAP_TEXTURES = PIXI.MIPMAP_MODES.OFF;
+            }
+
+            app = new PIXI.Application(_this.v8? null: options)
+
+            if(_this.v8) await app.init(options);
+
+            _this.app = app;
+
+            app.ticker.add(_ticker => {
+                if(_this.tickers[_this.activeScreen]) for(let ticker of _this.tickers[_this.activeScreen]) if(ticker) ticker(_ticker.deltaTime, _ticker);
             })
+
+            return app
         }
 
         onKeypress(callback){
@@ -87,11 +122,6 @@ function Engine(element, options){
                 }
             }
         }
-
-        applyOptions(options){
-            _this.width = options.width || _this.width || 640
-            _this.height = options.height || _this.height || 480
-        }
     
         fixResolution(){
             if(!_this.scaling) return;
@@ -99,8 +129,8 @@ function Engine(element, options){
             let element = _this.element,
         
             scale = Math.min(
-                (_this.options.containerWidth || Number(window.innerWidth)) / _this.width,    
-                (_this.options.containerHeight || Number(window.innerHeight)) / _this.height
+                (_this.options.containerWidth || Number(window.innerWidth)) / _this.options.width,    
+                (_this.options.containerHeight || Number(window.innerHeight)) / _this.options.height
             );
 
             _this.scale = scale
@@ -110,16 +140,16 @@ function Engine(element, options){
     
         setResolution(w, h){
             if(typeof w === "undefined" && typeof h === "undefined") {
-                w = _this.width;
-                h = _this.height;
+                w = _this.options.width;
+                h = _this.options.height;
             }
             
-            let aspectRatio = _this.width / _this.height;
+            let aspectRatio = _this.options.width / _this.options.height;
             if(typeof w === "undefined") w = Math.round(h * aspectRatio);
             if(typeof h === "undefined") h = Math.round(w / aspectRatio);
             
-            _this.width = w;
-            _this.height = h;
+            _this.options.width = w;
+            _this.options.height = h;
             
             _this.element.applyStyle({width: w +"px", height: h +"px"});
             _this.fixResolution()
@@ -168,12 +198,15 @@ function Engine(element, options){
             for(let character in data.charData){
                 character = +character;
 
-                characterTextures[character] = new PIXI.Texture(texture, new PIXI.Rectangle(
-                    Math.floor(character % (data.imageWidth / data.cellWidth)) * data.cellWidth,
-                    Math.floor(character / (data.imageWidth / data.cellWidth)) * data.cellHeight,
-                    data.cellWidth,
-                    data.cellHeight
-                ))
+                characterTextures[character] = new PIXI.Texture({
+                    source: texture,
+                    frame: new PIXI.Rectangle(
+                        Math.floor(character % (data.imageWidth / data.cellWidth)) * data.cellWidth,
+                        Math.floor(character / (data.imageWidth / data.cellWidth)) * data.cellHeight,
+                        data.cellWidth,
+                        data.cellHeight
+                    )
+                })
             }
 
             return {
@@ -355,6 +388,7 @@ function Engine(element, options){
                         })
                     }
 
+                    // FIXME: FIX THIS
                     if(object.slope){
                         object.onMovement = (rect, incrementX, incrementY) => {
                             if(object.angle === -45) {
@@ -522,7 +556,18 @@ function Engine(element, options){
                     if(id === player.currentFrame || !player.frames[id]) return false;
     
                     player.currentFrame = id
-                    player.sprite.texture.frame = player.frames[id]
+
+                    if(_this.v8) {
+
+                        // Fuck you PIXI v8, why do I have to do all this now
+                        player.sprite.texture.frame.copyFrom(player.frames[id])
+                        player.sprite.texture.updateUvs()
+                        player.sprite.onViewUpdate()
+
+                    } else {
+                        player.sprite.texture.frame = player.frames[id]
+                    }
+
                     return true
                 },
     
@@ -934,7 +979,7 @@ function Engine(element, options){
 
                     if(options.space) xPos += options.space, options.space = null;
 
-                    if((options.wrap && xPos > _this.width) || char === "\n" || options.lineBreak){
+                    if((options.wrap && xPos > app.screen.width) || char === "\n" || options.lineBreak){
                         xPos = 0
                         yPos += options.font.data.cellHeight + options.lineHeight
                     }
@@ -1045,8 +1090,9 @@ function Engine(element, options){
             let elapsed = 0;
         
             const ticker = new PIXI.Ticker();
-            ticker.add((delta) => {
-                elapsed += delta * PIXI.Ticker.shared.deltaMS;
+
+            ticker.add(ticker => {
+                elapsed += ticker.deltaTime * PIXI.Ticker.shared.deltaMS;
                 container.alpha = Math.min(elapsed / duration, 1);
         
                 if (elapsed >= duration) {
