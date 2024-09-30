@@ -381,9 +381,21 @@ async function start(loadTime){
             ]
         })
 
+
+
+
+        setInterval(() => {
+            if(Math.random() > .5) {
+                // random battle encounter (testing)
+
+                undertale.startBattle()
+            }
+        }, 5000)
+
+
         self.addTicker(world.defaultTicker);
 
-        game.world = { camera, player, world }
+        game.world = { camera, player, world, undertale }
 
         self.add(camera)
         

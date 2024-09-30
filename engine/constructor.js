@@ -53,6 +53,11 @@ LS.once("body-available", async function () {
             map_test: "/assets/maps/test/map.png",
             map_slope: "/assets/maps/slopetest/map.png",
             map_asd: "/assets/maps/slopetest/asd.png",
+
+            battle_button_fight: "/assets/sprites/buttons/fight.png",
+            battle_button_act: "/assets/sprites/buttons/act.png",
+            battle_button_item: "/assets/sprites/buttons/item.png",
+            battle_button_mercy: "/assets/sprites/buttons/mercy.png",
         },
 
         screens: {},

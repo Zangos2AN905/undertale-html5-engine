@@ -123,9 +123,6 @@ Engine.misc = {
     },
 
 
-
-
-
     // Needs work, after that will be put into the Engine class
 
     decodePixelCollisionMasks(encoded) {

@@ -678,11 +678,78 @@ function Engine(element, options){
             camera.container.addChild(player.container)
             camera.container.visible = false
 
-            let undertale = {
 
+
+            let battle_buttons = [
+                new PIXI.Sprite(game.assets.battle_button_fight),
+                new PIXI.Sprite(game.assets.battle_button_act),
+                new PIXI.Sprite(game.assets.battle_button_item),
+                new PIXI.Sprite(game.assets.battle_button_mercy)
+            ], battleContainer = new PIXI.Container;
+
+            let padding = ((app.screen.width - (battle_buttons.length * battle_buttons[0].width)) / battle_buttons.length), offset = padding;
+
+            for(let button of battle_buttons){
+                button.y = app.screen.height - button.height - 20;
+                button.x = offset
+                offset += padding + button.width;
+                battleContainer.addChild(button)
+            }
+
+            screen.container.addChild(battleContainer)
+
+            let undertale = {
+                soul: new PIXI.Sprite(game.assets.soul),
+
+                battleAreaRect: new PIXI.Graphics(),
+
+                soulCollisoin(){
+
+                },
+
+                inBattle: false,
+
+                battleGUI(){
+
+                },
+
+                startBattle(){
+                    undertale.inBattle = true;
+                    camera.container.visible = false;
+                    battleContainer.visible = true;
+
+                    let width = 20, targetWidth = app.screen.width - 20;
+                    screen.addTicker((delta, ticker) => {
+                        
+                        // Rectangle animation
+                        if(width > targetWidth){
+                            undertale.drawReect(targetWidth)
+
+                            ticker.stop()
+                        }
+
+                        undertale.drawReect(width);
+                        width += delta
+                    })
+                },
+
+                projectile(source, ticker){
+                    // 
+                },
+
+                drawReect(width = app.screen.width, height = 200){
+                    undertale.battleAreaRect.rect(0, 0, width - 20, height).fill({
+                        color: 0x000000
+                    }).stroke({
+                        width: 2,
+                        color: 0xffffff
+                    })
+                }
             }
 
             if(screen) world.keyEvents = screen.keyboardEvents(event => {
+                if(undertale.inBattle) return;
+
                 if(event.main) player.keyStates[4] = event.down; else {
                     player.keyStates[event.direction] = event.down
                 }
@@ -717,7 +784,7 @@ function Engine(element, options){
                     }
 
                     world.interactingObject = object.id
-                    
+
                     // Collision
                     if(object.solid) {
                         if(collidesX) result[0] = true
