@@ -395,13 +395,17 @@ async function start(loadTime){
 
 
 
-        setInterval(() => {
-            if(Math.random() > .5) {
-                // random battle encounter (testing)
+        // setInterval(() => {
+        //     if(Math.random() > .5) {
+        //         // random battle encounter (testing)
 
-                undertale.startBattle()
-            }
-        }, 5000)
+        //         undertale.startBattle()
+        //     }
+        // }, 5000)
+
+        setTimeout(() => {
+            undertale.startBattle()
+        }, 1000)
 
 
         self.addTicker(world.defaultTicker);

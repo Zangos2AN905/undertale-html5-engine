@@ -723,8 +723,6 @@ function Engine(element, options){
             camera.container.addChild(player.container)
             camera.container.visible = false
 
-
-
             let battle_buttons = [
                 new PIXI.Sprite(game.assets.battle_button_fight),
                 new PIXI.Sprite(game.assets.battle_button_act),
@@ -732,17 +730,18 @@ function Engine(element, options){
                 new PIXI.Sprite(game.assets.battle_button_mercy)
             ], battleContainer = new PIXI.Container;
 
-            let padding = ((app.screen.width - (battle_buttons.length * battle_buttons[0].width)) / battle_buttons.length), offset = padding;
+            let padding = (((app.screen.width - 20) - (battle_buttons.length * battle_buttons[0].width)) / battle_buttons.length), offset = padding - 10;
 
             for(let button of battle_buttons){
-                button.y = app.screen.height - button.height - 20;
+                button.y = app.screen.height - button.height - 6;
                 button.x = offset
                 offset += padding + button.width;
                 battleContainer.addChild(button)
+
             }
-
+            
             screen.container.addChild(battleContainer)
-
+            
             let undertale = {
                 soul: new PIXI.Sprite(game.assets.soul),
 
@@ -763,18 +762,18 @@ function Engine(element, options){
                     camera.container.visible = false;
                     battleContainer.visible = true;
 
-                    let width = 20, targetWidth = app.screen.width - 20;
+                    undertale.battleAreaRect.position.y = app.screen.height - 6 - battle_buttons[0].height - 42 - 130 - 8;
+
+                    let width = 20, targetWidth = app.screen.width - 64 - 8;
                     screen.addTicker((delta, ticker) => {
-                        
                         // Rectangle animation
                         if(width > targetWidth){
-                            undertale.drawReect(targetWidth)
-
+                            undertale.drawRect(targetWidth)
                             ticker.stop()
                         }
 
-                        undertale.drawReect(width);
-                        width += delta
+                        undertale.drawRect(width);
+                        width += delta * 8
                     })
                 },
 
@@ -782,15 +781,20 @@ function Engine(element, options){
                     // 
                 },
 
-                drawReect(width = app.screen.width, height = 200){
-                    undertale.battleAreaRect.rect(0, 0, width - 20, height).fill({
+                drawRect(width = app.screen.width - 64, height = 130, center = true){
+                    undertale.battleAreaRect.clear().rect(0, 0, width, height).fill({
                         color: 0x000000
                     }).stroke({
-                        width: 2,
-                        color: 0xffffff
+                        width: 4,
+                        color: 0xffffff,
+                        anchor: 0
                     })
+
+                    if(center) undertale.battleAreaRect.position.x = (app.screen.width - width - 8) / 2
                 }
             }
+
+            battleContainer.addChild(undertale.battleAreaRect)
 
             if(screen) world.keyEvents = screen.keyboardEvents(event => {
                 if(undertale.inBattle) return;
