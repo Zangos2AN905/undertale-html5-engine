@@ -1,25 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-
-    @manifest {
-        title: "Undertale";
-        favicon: "/assets/soul.png";
-    }
-    
-    @resources {
-        # CDN can be replaced with local copy of PIXI.js
-        js:
-            https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.3.4/pixi.min.js,
-            /engine/engine.js,
-            /engine/constructor.js,
-            /engine/misc.js,
-
-            # Game logic
-            /game/game.js
-        ;
-
-        ls-js: tiny;
-    }
-
+    <title>Undertale</title>
+    <link rel="icon" href="/assets/soul.png" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.3.4/pixi.min.js"></script>
+    <script src="/engine/engine.js"></script>
+    <script src="/engine/constructor.js"></script>
+    <script src="/engine/misc.js"></script>
+    <script src="/game/game.js"></script>
+</head>
     <script async>
         window.tsl = Date.now() // Time since load
     </script>
@@ -145,3 +134,4 @@
         })
     </script>
 </body>
+</html>
